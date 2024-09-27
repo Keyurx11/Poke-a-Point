@@ -1,23 +1,23 @@
-// index.ts
+// backend/src/index.ts
 
 import express from 'express';
 import http from 'http';
 import { Server, Socket } from 'socket.io';
 import cors from 'cors';
+import path from 'path';
 
 const app = express();
 
-app.use(
-  cors({
-    origin: process.env.FRONTEND_URL || '*',
-    methods: ['GET', 'POST'],
-  })
-);
+// CORS configuration
+app.use(cors({
+  origin: '*', // Since frontend and backend are on the same origin, you can set this to '*'
+  methods: ['GET', 'POST'],
+}));
 
 app.use(express.json());
 
+// Socket.IO setup
 const server = http.createServer(app);
-
 const io = new Server(server, {
   cors: {
     origin: process.env.FRONTEND_URL || '*',
@@ -184,6 +184,14 @@ io.on('connection', (socket: Socket) => {
       }
     }
   });
+});
+
+// Serve static files from the frontend build
+app.use(express.static(path.join(__dirname, 'public')));
+
+// For any other requests, serve the frontend's index.html
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
 const PORT = process.env.PORT || 5000;

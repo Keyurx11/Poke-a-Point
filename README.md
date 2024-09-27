@@ -40,30 +40,6 @@ CFF Planning Poker is an Agile estimation tool built with React, TypeScript, and
 npm install -g pnpm
 ```
 
-## Environment Variables
-
-### Frontend (`frontend/.env`)
-
-Create a `.env` file in the `frontend` directory with the following content:
-
-```env
-VITE_SOCKET_URL=http://localhost:5000
-VITE_FRONTEND_URL=http://localhost:5173
-```
-
-- `VITE_SOCKET_URL`: URL where your backend Socket.IO server is running.
-- `VITE_FRONTEND_URL`: URL where your frontend application is running.
-
-### Backend (`backend/.env`)
-
-Create a `.env` file in the `backend` directory with the following content:
-
-```env
-FRONTEND_URL=http://localhost:5173
-```
-
-- `FRONTEND_URL`: URL where your frontend application is running.
-
 ## Installation
 
 1. **Clone the repository:**
@@ -81,19 +57,7 @@ FRONTEND_URL=http://localhost:5173
 3. **Install dependencies:**
 
    ```bash
-   # Install root dependencies
    pnpm install
-
-   # Install frontend dependencies
-   cd frontend
-   pnpm install
-
-   # Install backend dependencies
-   cd ../backend
-   pnpm install
-
-   # Return to project root
-   cd ..
    ```
 
 ## Running the Application
@@ -110,9 +74,9 @@ FRONTEND_URL=http://localhost:5173
 
    Open your browser and navigate to `http://localhost:5173`.
 
-### Build for Production
+### Production Mode
 
-1. **Build the frontend and backend:**
+1. **Build the application:**
 
    ```bash
    pnpm run build
@@ -124,11 +88,9 @@ FRONTEND_URL=http://localhost:5173
    pnpm run start
    ```
 
-   - The backend server will run from the `backend/dist` directory.
+3. **Access the application:**
 
-3. **Serve the frontend build (optional):**
-
-   You can serve the built frontend using a static server or configure your backend to serve the static files.
+   Open your browser and navigate to `http://localhost:5000`.
 
 ## Scripts
 
@@ -158,69 +120,42 @@ FRONTEND_URL=http://localhost:5173
 
   - Starts the backend server from the built files.
 
-### Frontend Scripts (`frontend/package.json`)
+## Deployment
 
-- **Start Frontend Development Server:**
+Since the frontend is now served by the backend, you can deploy the entire application as a single service.
 
-  ```bash
-  pnpm run dev
-  ```
+### Build and Start Commands for Deployment
 
-- **Build Frontend:**
+- **Build Command:**
 
   ```bash
-  pnpm run build
+  pnpm install --prod=false && pnpm run build
   ```
 
-- **Preview Frontend Production Build:**
-
-  ```bash
-  pnpm run preview
-  ```
-
-### Backend Scripts (`backend/package.json`)
-
-- **Start Backend Development Server:**
-
-  ```bash
-  pnpm run dev
-  ```
-
-- **Build Backend:**
-
-  ```bash
-  pnpm run build
-  ```
-
-- **Start Backend Server:**
+- **Start Command:**
 
   ```bash
   pnpm run start
   ```
 
-## Deployment
-
-When deploying to a platform like Render or Heroku, ensure you set the environment variables accordingly.
-
-### Environment Variables for Deployment
-
-- **Frontend Service:**
-
-  - `VITE_SOCKET_URL`: URL of your deployed backend service.
-  - `VITE_FRONTEND_URL`: URL of your deployed frontend service.
-
-- **Backend Service:**
-
-  - `FRONTEND_URL`: URL of your deployed frontend service.
-
 ### Notes for Deployment
 
-- Update the CORS configuration in the backend to allow requests from your frontend URL.
-- Ensure the invite link in the application uses the correct frontend URL.
+- **Environment Variables:**
+
+  - No additional environment variables are needed for URLs, as the frontend and backend are served from the same origin.
+  - Ensure any other necessary environment variables are set according to your deployment environment.
+
+- **CORS Configuration:**
+
+  - The backend is configured to allow requests from the same origin.
+
+- **Serving Static Files:**
+
+  - The backend serves the frontend build files from the `backend/dist/public` directory.
 
 ## Known Issues
 
-- **Routing Issue:** Refreshing the page or manually entering a URL may cause routing issues due to the use of client-side routing with React Router. This can be resolved by configuring the server to serve the `index.html` file for all routes (e.g., using a fallback in your server or deployment platform).
+- **Routing Issue:** Refreshing the page or manually entering a URL may cause routing issues due to client-side routing. This is resolved by the backend serving the `index.html` file for all unknown routes.
 
 ## Contributing
 
@@ -237,4 +172,4 @@ This project is licensed under the MIT License.
 
 ---
 
-**Enjoy planning your sprints with CFF Planning Poker!**
+**Enjoy planning your sprints with Agile Poker Tool!**

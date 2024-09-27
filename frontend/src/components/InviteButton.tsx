@@ -1,11 +1,8 @@
-// src/components/InviteButton.tsx
-
 import React from 'react';
 import { Button } from '@mui/material';
 
 const InviteButton: React.FC<{ roomId: string }> = ({ roomId }) => {
-  const frontendURL = import.meta.env.VITE_FRONTEND_URL || window.location.origin;
-  const inviteUrl = `${frontendURL}/join?roomId=${roomId}`;
+  const inviteUrl = `${window.location.origin}/join?roomId=${roomId}`;
 
   const copyUrl = () => {
     navigator.clipboard.writeText(inviteUrl);

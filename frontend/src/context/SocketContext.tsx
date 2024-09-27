@@ -7,12 +7,8 @@ const SocketContext = createContext<Socket | null>(null);
 
 export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const socket = useMemo(() => {
-    const socketURL = import.meta.env.VITE_SOCKET_URL || 'http://localhost:5000';
-    return io(socketURL, {
-      reconnection: true,
-      reconnectionAttempts: 5,
-      reconnectionDelay: 1000,
-    });
+    const socketURL = window.location.origin;
+    return io(socketURL);
   }, []);
 
   useEffect(() => {
