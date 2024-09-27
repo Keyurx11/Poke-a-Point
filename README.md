@@ -1,8 +1,8 @@
-# CFF Planning Poker
+# Poke-a-Point
 
 ## Description
 
-CFF Planning Poker is an Agile estimation tool built with React, TypeScript, and Vite. It allows teams to conduct estimation sessions using planning poker, enhancing collaboration and improving estimation accuracy.
+Poke-a-Point is an Agile estimation tool built with React, TypeScript, and Vite. It allows teams to conduct estimation sessions using planning poker, enhancing collaboration and improving estimation accuracy.
 
 ## Technologies Used
 
@@ -45,13 +45,13 @@ npm install -g pnpm
 1. **Clone the repository:**
 
    ```bash
-   git clone https://github.com/Keyurx11/Agile-Poker-Tool.git
+   git clone https://github.com/Keyurx11/Poke-a-Point.git
    ```
 
 2. **Navigate to the project directory:**
 
    ```bash
-   cd Agile-Poker-Tool
+   cd Poke-a-Point
    ```
 
 3. **Install dependencies:**
@@ -172,4 +172,4 @@ This project is licensed under the MIT License.
 
 ---
 
-**Enjoy planning your sprints with Agile Poker Tool!**
+**Enjoy planning your sprints with Poke-a-Point!**

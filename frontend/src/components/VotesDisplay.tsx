@@ -1,16 +1,27 @@
 // src/components/VotesDisplay.tsx
 
 import React from 'react';
-import { Grid, Card, CardContent, Typography, Paper } from '@mui/material';
+import { Grid, Card, CardContent, Typography, Paper, Button, Box } from '@mui/material';
 
 interface VotesDisplayProps {
   users: { id: string; name: string }[];
   votes: { [key: string]: number | string | null };
   showVotes: boolean;
   votingOptions: (number | string)[];
+  isCreator: boolean;
+  handleResetVotes: () => void;
+  handleToggleVotes: () => void;
 }
 
-const VotesDisplay: React.FC<VotesDisplayProps> = ({ users, votes, showVotes, votingOptions }) => {
+const VotesDisplay: React.FC<VotesDisplayProps> = ({
+  users,
+  votes,
+  showVotes,
+  votingOptions,
+  isCreator,
+  handleResetVotes,
+  handleToggleVotes,
+}) => {
   const calculateAverageVote = () => {
     const voteValues = users
       .map((user) => (typeof votes[user.id] === 'number' ? Number(votes[user.id]) : null))
@@ -33,9 +44,28 @@ const VotesDisplay: React.FC<VotesDisplayProps> = ({ users, votes, showVotes, vo
 
   return (
     <Paper sx={{ padding: 2 }}>
-      <Typography variant="h6" gutterBottom>
-        {showVotes ? 'Votes' : 'Votes Hidden'}
-      </Typography>
+      <Box display="flex" justifyContent="space-between" alignItems="center" marginBottom={2}>
+        <Typography variant="h6">
+          {showVotes ? 'Votes' : 'Votes Hidden'}
+        </Typography>
+
+        {/* Only show the buttons if the user is the creator */}
+        {isCreator && (
+          <Box>
+            <Button
+              variant="outlined"
+              color="primary"
+              onClick={handleToggleVotes}
+              sx={{ marginRight: 1 }}
+            >
+              {showVotes ? 'Hide Points' : 'Show Points'}
+            </Button>
+            <Button variant="outlined" color="secondary" onClick={handleResetVotes}>
+              Reset All Votes
+            </Button>
+          </Box>
+        )}
+      </Box>
 
       {showVotes && averageVote !== null && (
         <Typography

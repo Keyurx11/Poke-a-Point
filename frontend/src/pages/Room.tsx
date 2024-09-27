@@ -150,16 +150,21 @@ const Room: React.FC = () => {
               votingOptions={votingOptions}
               selectedVote={selectedVote}
               handleVote={handleVote}
-              handleResetVotes={handleResetVotes}
               handleResetMyVote={handleResetMyVote}
-              handleToggleVotes={handleToggleVotes}
-              showVotes={showVotes}
-              isCreator={isCreator}
             />
           </Grid>
         </Grid>
+
         <Box sx={{ marginTop: 4 }}>
-          <VotesDisplay users={users} votes={votes} showVotes={showVotes} votingOptions={votingOptions} />
+          <VotesDisplay
+            users={users}
+            votes={votes}
+            showVotes={showVotes}
+            votingOptions={votingOptions}
+            isCreator={isCreator}
+            handleResetVotes={handleResetVotes}
+            handleToggleVotes={handleToggleVotes}
+          />
         </Box>
       </Paper>
     </Container>
