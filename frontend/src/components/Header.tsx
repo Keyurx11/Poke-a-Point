@@ -11,7 +11,7 @@ const Header: React.FC = () => {
         <Toolbar sx={{ justifyContent: 'center', alignItems: 'center' }}>
           <Typography variant="h6" component="div" sx={{ flexGrow: 1, textAlign: 'center' }}>
             <Link to="/" style={{ textDecoration: 'none', color: 'inherit' }}>
-              CFF Planning Poker
+            Poke-a-Point
             </Link>
           </Typography>
         </Toolbar>

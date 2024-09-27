@@ -10,7 +10,7 @@ const Home: React.FC = () => {
   return (
     <Container maxWidth="sm" sx={{ textAlign: 'center', marginTop: 8 }}>
       <Typography variant="h4" gutterBottom>
-        Welcome to CFF Planning Poker
+        Welcome to Poke-a-Point
       </Typography>
       <Stack spacing={2} direction="column">
         <Button variant="contained" color="primary" onClick={() => navigate('/create')}>
