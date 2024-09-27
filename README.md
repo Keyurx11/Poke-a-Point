@@ -1,3 +1,4 @@
+
 # Agile Poker Tool
 
 ## Description
@@ -33,22 +34,27 @@ npm install -g pnpm
     ```
 3. Install the dependencies for both frontend and backend:
     ```bash
+    # In the root of your project
     pnpm install
+
+    # In the frontend
     cd frontend
     pnpm install
+
+    # In the backend
     cd ../backend
     pnpm install
     ```
 
 ### Running the Application
 
-1. Start the backend server:
+1. Navigate back to the project root:
     ```bash
-    pnpm --prefix backend run dev
+    cd ..
     ```
-2. Start the frontend development server:
+2. Start both backend and frontend servers:
     ```bash
-    pnpm --prefix frontend run dev
+    pnpm run dev
     ```
 3. Open your browser and go to `http://localhost:5173` to access the application.
 
