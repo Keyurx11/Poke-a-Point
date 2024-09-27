@@ -9,16 +9,16 @@ const Home: React.FC = () => {
 
   return (
     <Container maxWidth="sm" sx={{ textAlign: 'center', marginTop: 8 }}>
-      <Typography variant="h4" gutterBottom>
-        Welcome to
+      <Typography variant="h4" gutterBottom sx={{ fontWeight: 'bold', color: '#1565C0' }}>
+        Agile Teams,
       </Typography>
-      <Typography variant="h4" gutterBottom>
-        Poke-a-Point
+      <Typography variant="h4" gutterBottom sx={{ fontWeight: 'bold',  color: '#1565C0' }}>
+        Simplified!
       </Typography>
-      <Typography variant="body1" gutterBottom>
+      <Typography variant="body1" gutterBottom sx={{ mb: 4 }}>
         A collaborative tool for agile teams to estimate and plan their projects effectively.
       </Typography>
-      <Stack spacing={2} direction="column">
+      <Stack spacing={2} direction="column" sx={{ mb: 4 }}>
         <Button variant="contained" color="primary" onClick={() => navigate('/create')}>
           Create Room
         </Button>
