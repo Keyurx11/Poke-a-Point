@@ -9,41 +9,41 @@ importers:
   .:
     dependencies:
       '@emotion/react':
-        specifier: ^11.11.1
+        specifier: ^11.13.3
         version: 11.13.3(@types/react@18.3.10)(react@18.3.1)
       '@emotion/styled':
-        specifier: ^11.11.0
+        specifier: ^11.13.0
         version: 11.13.0(@emotion/react@11.13.3(@types/react@18.3.10)(react@18.3.1))(@types/react@18.3.10)(react@18.3.1)
       '@mui/material':
-        specifier: ^5.13.7
+        specifier: ^5.16.7
         version: 5.16.7(@emotion/react@11.13.3(@types/react@18.3.10)(react@18.3.1))(@emotion/styled@11.13.0(@emotion/react@11.13.3(@types/react@18.3.10)(react@18.3.1))(@types/react@18.3.10)(react@18.3.1))(@types/react@18.3.10)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       react:
-        specifier: ^18.2.0
+        specifier: ^18.3.1
         version: 18.3.1
       react-dom:
-        specifier: ^18.2.0
+        specifier: ^18.3.1
         version: 18.3.1(react@18.3.1)
       react-router-dom:
-        specifier: ^6.14.2
+        specifier: ^6.26.2
         version: 6.26.2(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       socket.io-client:
         specifier: ^4.8.0
         version: 4.8.0
     devDependencies:
       '@types/react':
-        specifier: ^18.2.14
+        specifier: ^18.3.10
         version: 18.3.10
       '@types/react-dom':
-        specifier: ^18.2.6
+        specifier: ^18.3.0
         version: 18.3.0
       '@vitejs/plugin-react':
-        specifier: ^4.0.2
+        specifier: ^4.3.1
         version: 4.3.1(vite@4.5.5)
       typescript:
-        specifier: ^5.1.6
+        specifier: ^5.6.2
         version: 5.6.2
       vite:
-        specifier: ^4.3.9
+        specifier: ^4.5.5
         version: 4.5.5
 
 packages:

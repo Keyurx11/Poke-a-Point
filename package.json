@@ -2,12 +2,10 @@
   "name": "cff-planning-poker",
   "private": true,
   "version": "1.0.0",
-  "type": "module",
   "scripts": {
     "dev": "concurrently \"pnpm --prefix backend run dev\" \"pnpm --prefix frontend run dev\"",
-    "build": "pnpm --prefix frontend run build && pnpm --prefix backend run build",
-    "start": "node backend/dist/index.js",
-    "preview": "pnpm --prefix frontend run preview"
+    "build": "pnpm --filter ./frontend --workspace-concurrency=1 run build && pnpm --filter ./backend run build && cp -r frontend/dist backend/dist/public",
+    "start": "node backend/dist/index.js"
   },
   "dependencies": {
     "concurrently": "^7.6.0"
