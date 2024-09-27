@@ -1,6 +1,8 @@
-import React, { useState } from 'react';
+// src/pages/JoinRoom.tsx
+
+import React, { useState, useEffect } from 'react';
 import { Container, TextField, Button, Typography, Box } from '@mui/material';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useSocket } from '../context/SocketContext';
 
 const JoinRoom: React.FC = () => {
@@ -8,27 +10,45 @@ const JoinRoom: React.FC = () => {
   const [userName, setUserName] = useState('');
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
+  const location = useLocation();
   const socket = useSocket();
 
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const roomIdFromUrl = params.get('roomId');
+    if (roomIdFromUrl) {
+      setRoomId(roomIdFromUrl);
+    }
+  }, [location.search]);
+
   const handleJoin = () => {
+    if (!socket || !socket.connected) {
+      setError('Socket not connected. Please wait and try again.');
+      return;
+    }
+
     if (!roomId || !userName) {
       setError('Room ID and User Name are required.');
       return;
     }
-  
+
     setError(null);
     localStorage.setItem('userName', userName);
     localStorage.setItem('roomId', roomId);
-  
-    socket.emit('joinRoom', { roomId, userName }, ({ success, room }) => {
-      if (success) {
-        console.log(`Joined room: ${roomId}`);
-        navigate(`/room/${roomId}`);
-      } else {
-        setError('Failed to join room. Please check the Room ID.');
+
+    socket.emit(
+      'joinRoom',
+      { roomId, userName },
+      (response: { success?: boolean; room?: any; error?: string }) => {
+        if (response.success) {
+          console.log(`Joined room: ${roomId}`);
+          navigate(`/room/${roomId}`);
+        } else {
+          setError(response.error || 'Failed to join room. Please check the Room ID.');
+        }
       }
-    });
-  };  
+    );
+  };
 
   return (
     <Container maxWidth="sm">

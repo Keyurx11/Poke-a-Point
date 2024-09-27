@@ -1,36 +1,41 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+// src/context/SocketContext.tsx
+
+import React, { createContext, useContext, useEffect, useMemo } from 'react';
 import { io, Socket } from 'socket.io-client';
 
 const SocketContext = createContext<Socket | null>(null);
 
 export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [socket, setSocket] = useState<Socket | null>(null);
-
-  useEffect(() => {
-    const newSocket = io('http://localhost:5000', {
-      reconnection: true,  
+  const socket = useMemo(() => {
+    const socketURL = import.meta.env.VITE_SOCKET_URL || 'http://localhost:5000';
+    return io(socketURL, {
+      reconnection: true,
       reconnectionAttempts: 5,
       reconnectionDelay: 1000,
     });
-    setSocket(newSocket);
+  }, []);
 
-    newSocket.on('connect', () => {
+  useEffect(() => {
+    socket.on('connect', () => {
       console.log('Connected to server');
+      // Rejoin room if roomId and userName are stored
       const roomId = localStorage.getItem('roomId');
       const userName = localStorage.getItem('userName');
       if (roomId && userName) {
-        newSocket.emit('rejoinRoom', { roomId, userName });
+        socket.emit('rejoinRoom', { roomId, userName }, (response: any) => {
+          console.log('Rejoin response:', response);
+        });
       }
     });
 
-    newSocket.on('disconnect', () => {
+    socket.on('disconnect', () => {
       console.log('Disconnected from server, attempting reconnection...');
     });
 
     return () => {
-      newSocket.disconnect();
+      socket.disconnect();
     };
-  }, []);
+  }, [socket]);
 
   return (
     <SocketContext.Provider value={socket}>

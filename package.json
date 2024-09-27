@@ -1,17 +1,15 @@
 {
   "name": "cff-planning-poker",
   "private": true,
-  "version": "0.0.0",
+  "version": "1.0.0",
   "type": "module",
   "scripts": {
     "dev": "concurrently \"pnpm --prefix backend run dev\" \"pnpm --prefix frontend run dev\"",
     "build": "pnpm --prefix frontend run build && pnpm --prefix backend run build",
+    "start": "node backend/dist/index.js",
     "preview": "pnpm --prefix frontend run preview"
   },
   "dependencies": {
-    "concurrently": "^9.0.1"
-  },
-  "devDependencies": {
-    "typescript": "^5.6.2"
+    "concurrently": "^7.6.0"
   }
 }

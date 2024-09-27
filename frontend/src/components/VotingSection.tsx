@@ -1,3 +1,5 @@
+// src/components/VotingSection.tsx
+
 import React from 'react';
 import { Grid, Button, Paper, Box, Typography } from '@mui/material';
 
@@ -6,10 +8,10 @@ interface VotingSectionProps {
   selectedVote: number | string | null;
   handleVote: (vote: number | string) => void;
   handleResetVotes: () => void;
-  handleResetMyVote: () => void; // New handler for individual vote reset
+  handleResetMyVote: () => void;
   handleToggleVotes: () => void;
   showVotes: boolean;
-  isCreator: boolean; // Added to distinguish between creator and participants
+  isCreator: boolean;
 }
 
 const VotingSection: React.FC<VotingSectionProps> = ({
@@ -20,7 +22,7 @@ const VotingSection: React.FC<VotingSectionProps> = ({
   handleResetMyVote,
   handleToggleVotes,
   showVotes,
-  isCreator, // Distinguish between creator and participants
+  isCreator,
 }) => (
   <Paper sx={{ padding: 2 }}>
     <Typography variant="h6" gutterBottom>
@@ -33,6 +35,7 @@ const VotingSection: React.FC<VotingSectionProps> = ({
             variant={selectedVote === option ? 'contained' : 'outlined'}
             color="primary"
             onClick={() => handleVote(option)}
+            sx={{ minWidth: '60px' }}
           >
             {option}
           </Button>
@@ -41,20 +44,19 @@ const VotingSection: React.FC<VotingSectionProps> = ({
     </Grid>
 
     <Box sx={{ marginTop: 2 }}>
-      {/* Show reset button for everyone */}
-      <Button
-        variant="outlined"
-        color="secondary"
-        onClick={isCreator ? handleResetVotes : handleResetMyVote} // Different behavior for creator and participants
-      >
-        {isCreator ? 'Reset All Votes' : 'Reset My Vote'}
+      <Button variant="outlined" color="secondary" onClick={handleResetMyVote}>
+        Reset My Vote
       </Button>
 
-      {/* Only show the show/hide votes button for the creator */}
       {isCreator && (
-        <Button variant="outlined" color="primary" onClick={handleToggleVotes} sx={{ marginLeft: 2 }}>
-          {showVotes ? 'Hide Votes' : 'Show Votes'}
-        </Button>
+        <>
+          <Button variant="outlined" color="primary" onClick={handleToggleVotes} sx={{ marginLeft: 2 }}>
+            {showVotes ? 'Hide Votes' : 'Show Votes'}
+          </Button>
+          <Button variant="outlined" color="secondary" onClick={handleResetVotes} sx={{ marginLeft: 2 }}>
+            Reset All Votes
+          </Button>
+        </>
       )}
     </Box>
   </Paper>

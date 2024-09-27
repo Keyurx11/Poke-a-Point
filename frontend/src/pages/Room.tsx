@@ -1,6 +1,8 @@
+// src/pages/Room.tsx
+
 import React, { useEffect, useState } from 'react';
-import { useParams, useLocation, useNavigate } from 'react-router-dom';
-import { Container, Grid, Box, Paper, Typography, Button } from '@mui/material';
+import { useParams, useNavigate } from 'react-router-dom';
+import { Container, Grid, Box, Paper } from '@mui/material';
 import { useSocket } from '../context/SocketContext';
 import RoomHeader from '../components/RoomHeader';
 import ParticipantsList from '../components/ParticipantsList';
@@ -8,24 +10,29 @@ import VotingSection from '../components/VotingSection';
 import VotesDisplay from '../components/VotesDisplay';
 import InviteButton from '../components/InviteButton';
 
-interface LocationState {
-  userName: string;
+interface User {
+  id: string;
+  name: string;
+}
+
+interface RoomData {
+  name: string;
+  users: User[];
+  votes: { [key: string]: number | string | null };
+  showVotes: boolean;
 }
 
 const votingOptions = [1, 2, 3, 5, 8, 13, 21, '?'];
 
 const Room: React.FC = () => {
-  const { roomId: paramRoomId } = useParams(); 
-  const location = useLocation();
+  const { roomId } = useParams<{ roomId: string }>();
   const navigate = useNavigate();
   const socket = useSocket();
 
-  const [userName, setUserName] = useState<string>(location.state?.userName || localStorage.getItem('userName') || '');
-  const [roomId, setRoomId] = useState<string | null>(paramRoomId || localStorage.getItem('roomId') || null);
-  const [roomName, setRoomName] = useState<string>(''); 
-
-  const [users, setUsers] = useState<{ id: string; name: string }[]>([]);
-  const [votes, setVotes] = useState<{ [key: string]: number | string }>({});
+  const [userName, setUserName] = useState<string>(localStorage.getItem('userName') || '');
+  const [roomName, setRoomName] = useState<string>('');
+  const [users, setUsers] = useState<User[]>([]);
+  const [votes, setVotes] = useState<{ [key: string]: number | string | null }>({});
   const [selectedVote, setSelectedVote] = useState<number | string | null>(null);
   const [showVotes, setShowVotes] = useState(false);
   const [isCreator, setIsCreator] = useState(false);
@@ -41,42 +48,45 @@ const Room: React.FC = () => {
       localStorage.setItem('roomId', roomId);
       localStorage.setItem('userName', userName);
 
-      socket.emit('joinRoom', { roomId, userName }, ({ success, room }) => {
+      socket.emit('joinRoom', { roomId, userName }, ({ success, room }: { success: boolean; room: RoomData }) => {
         if (success) {
           setUsers(room.users);
           setVotes(room.votes);
-          setRoomName(room.name); 
+          setRoomName(room.name);
+          setShowVotes(room.showVotes);
           if (room.users[0]?.id === socket.id) {
-            setIsCreator(true); 
+            setIsCreator(true);
           }
+        } else {
+          navigate('/join');
         }
       });
 
-      socket.on('roomData', (room) => {
+      socket.on('roomData', (room: RoomData) => {
         setUsers(room.users);
         setVotes(room.votes);
-        setRoomName(room.name); 
+        setRoomName(room.name);
       });
 
       socket.on('votesUpdate', (updatedVotes) => {
         setVotes(updatedVotes);
       });
 
-      socket.on('toggleVotes', (showVotesState) => {
-        setShowVotes(showVotesState); 
+      socket.on('toggleVotes', (showVotesState: boolean) => {
+        setShowVotes(showVotesState);
       });
 
       return () => {
         socket.off('roomData');
         socket.off('votesUpdate');
-        socket.off('toggleVotes'); 
+        socket.off('toggleVotes');
       };
     }
-  }, [roomId, userName, socket]);
+  }, [roomId, userName, socket, navigate]);
 
   const handleVote = (vote: number | string) => {
     if (roomId) {
-      socket.emit('vote', { roomId, userId: socket.id, vote }, ({ success }) => {
+      socket.emit('vote', { roomId, userId: socket.id, vote }, ({ success }: { success: boolean }) => {
         if (success) {
           setSelectedVote(vote);
         }
@@ -86,8 +96,11 @@ const Room: React.FC = () => {
 
   const handleResetVotes = () => {
     if (roomId && isCreator) {
-      socket.emit('resetVotes', { roomId }, ({ success }) => {
-        if (!success) {
+      socket.emit('resetVotes', { roomId }, ({ success }: { success: boolean }) => {
+        if (success) {
+          setShowVotes(false);
+          setSelectedVote(null);
+        } else {
           alert('Failed to reset votes');
         }
       });
@@ -96,12 +109,11 @@ const Room: React.FC = () => {
 
   const handleResetMyVote = () => {
     if (roomId) {
-      socket.emit('vote', { roomId, userId: socket.id, vote: null }, ({ success }) => {
-        if (!success) {
-          alert('Failed to reset my vote');
-        } else {
+      socket.emit('vote', { roomId, userId: socket.id, vote: null }, ({ success }: { success: boolean }) => {
+        if (success) {
           setSelectedVote(null);
-          setVotes((prevVotes) => ({ ...prevVotes, [socket.id]: null }));
+        } else {
+          alert('Failed to reset your vote');
         }
       });
     }
@@ -110,8 +122,7 @@ const Room: React.FC = () => {
   const handleToggleVotes = () => {
     if (isCreator && roomId) {
       const newShowVotes = !showVotes;
-      setShowVotes(newShowVotes);
-      socket.emit('toggleVotes', { roomId, showVotes: newShowVotes }); 
+      socket.emit('toggleVotes', { roomId, showVotes: newShowVotes });
     }
   };
 
@@ -121,7 +132,10 @@ const Room: React.FC = () => {
 
   return (
     <Container maxWidth="md" sx={{ marginTop: 5 }}>
-      <Paper elevation={3} sx={{ padding: 3, borderRadius: '10px', backgroundColor: '#f7f9fc' }}>
+      <Paper
+        elevation={3}
+        sx={{ padding: 3, borderRadius: '10px', backgroundColor: '#f7f9fc', minHeight: '80vh' }}
+      >
         <RoomHeader roomId={roomId} roomName={roomName} userName={userName} />
         <Box textAlign="center" sx={{ marginBottom: 3 }}>
           <InviteButton roomId={roomId} />
@@ -137,7 +151,7 @@ const Room: React.FC = () => {
               selectedVote={selectedVote}
               handleVote={handleVote}
               handleResetVotes={handleResetVotes}
-              handleResetMyVote={handleResetMyVote} 
+              handleResetMyVote={handleResetMyVote}
               handleToggleVotes={handleToggleVotes}
               showVotes={showVotes}
               isCreator={isCreator}

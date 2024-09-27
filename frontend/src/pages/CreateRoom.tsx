@@ -1,3 +1,5 @@
+// src/pages/CreateRoom.tsx
+
 import React, { useState } from 'react';
 import { Container, TextField, Button, Typography, Box } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
@@ -6,7 +8,7 @@ import { useSocket } from '../context/SocketContext';
 const CreateRoom: React.FC = () => {
   const [roomName, setRoomName] = useState('');
   const [userName, setUserName] = useState('');
-  const [error, setError] = useState<string | null>(null); 
+  const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
   const socket = useSocket();
 
@@ -15,10 +17,10 @@ const CreateRoom: React.FC = () => {
       setError('Room Name and User Name are required.');
       return;
     }
-  
+
     setError(null);
     localStorage.setItem('userName', userName);
-  
+
     socket.emit('createRoom', { roomName, userName }, ({ roomId }: { roomId: string }) => {
       if (roomId) {
         console.log(`Room created with ID: ${roomId}`);
@@ -28,7 +30,7 @@ const CreateRoom: React.FC = () => {
         setError('Failed to create room. Please try again.');
       }
     });
-  };  
+  };
 
   return (
     <Container maxWidth="sm">
