@@ -1,0 +1,17 @@
+{
+  "compilerOptions": {
+    "strict": true,
+    "module": "ESNext",           // Modern module resolution
+    "target": "ES6",              // This is fine for ES6+ environments
+    "jsx": "react-jsx",          // Ensures JSX runtime is used
+    "lib": ["DOM", "ESNext"],     // Use the DOM and ESNext libraries
+    "moduleResolution": "Node",   // Resolve modules like Node.js
+    "esModuleInterop": true,      // Improves compatibility with CommonJS modules
+    "skipLibCheck": true,         // Speeds up build by skipping library checks
+    "forceConsistentCasingInFileNames": true, // Case-sensitive imports
+    "resolveJsonModule": true,    // Allows importing JSON files
+    "isolatedModules": true       // Required for React and Vite setup
+  },
+  "include": ["src/**/*"],        // Only include the source folder
+  "exclude": ["node_modules"]     // Exclude node_modules to prevent conflicts
+}
