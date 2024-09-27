@@ -4,32 +4,14 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "concurrently \"pnpm --prefix backend dev\" \"pnpm --prefix frontend dev\"",
-    "build": "tsc -b && vite build",
-    "preview": "vite preview"
+    "dev": "concurrently \"pnpm --prefix backend run dev\" \"pnpm --prefix frontend run dev\"",
+    "build": "pnpm --prefix frontend run build && pnpm --prefix backend run build",
+    "preview": "pnpm --prefix frontend run preview"
   },
   "dependencies": {
-    "@mui/material": "^6.1.1",
-    "@types/react-router-dom": "^5.3.3",
-    "concurrently": "^9.0.1",
-    "cors": "^2.8.5",
-    "express": "^4.21.0",
-    "react": "^18.3.1",
-    "react-dom": "^18.3.1",
-    "react-router-dom": "^6.26.2",
-    "socket.io": "^4.8.0",
-    "socket.io-client": "^4.8.0"
+    "concurrently": "^9.0.1"
   },
   "devDependencies": {
-    "@types/cors": "^2.8.17",
-    "@types/express": "^5.0.0",
-    "@types/node": "^22.7.3",
-    "@types/react": "^18.3.9",
-    "@types/react-dom": "^18.3.0",
-    "@vitejs/plugin-react": "^4.3.1",
-    "@vitejs/plugin-react-swc": "^3.5.0",
-    "ts-node-dev": "^2.0.0",
-    "typescript": "^5.6.2",
-    "vite": "^5.4.1"
+    "typescript": "^5.6.2"
   }
 }

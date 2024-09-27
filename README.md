@@ -3,6 +3,11 @@
 ## Description
 This is an Agile Poker Tool application built with React, TypeScript, and Vite. It enables teams to conduct agile estimation sessions using planning poker.
 
+![Agile Poker Tool Screenshot](assets/poker-tool.png)
+
+## Current Issue
+The application has a routing issue where refreshing the page or manually entering a URL does not work correctly. The routing only functions when navigating through buttons. This needs to be fixed for a better user experience. Fix upcoming in the next release.
+
 ## Technologies Used
 - **Frontend:** React, Vite, Material UI
 - **Backend:** Node.js, Express, Socket.IO
