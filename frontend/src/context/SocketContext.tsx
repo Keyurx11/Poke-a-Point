@@ -13,15 +13,7 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
   useEffect(() => {
     socket.on('connect', () => {
-      console.log('Connected to server');
-      // Rejoin room if roomId and userName are stored
-      const roomId = localStorage.getItem('roomId');
-      const userName = localStorage.getItem('userName');
-      if (roomId && userName) {
-        socket.emit('rejoinRoom', { roomId, userName }, (response: any) => {
-          console.log('Rejoin response:', response);
-        });
-      }
+      console.log('Connected to server, socket ID:', socket.id);
     });
 
     socket.on('disconnect', () => {
@@ -29,7 +21,8 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     });
 
     return () => {
-      socket.disconnect();
+      socket.off('connect');
+      socket.off('disconnect');
     };
   }, [socket]);
 

@@ -4,10 +4,14 @@
   "version": "1.0.0",
   "scripts": {
     "dev": "concurrently \"pnpm --prefix backend run dev\" \"pnpm --prefix frontend run dev\"",
-    "build": "pnpm --filter ./frontend --workspace-concurrency=1 run build && pnpm --filter ./backend run build && cp -r frontend/dist backend/dist/public",
-    "start": "node backend/dist/index.js"
+    "build": "pnpm --filter ./frontend --workspace-concurrency=1 run build && pnpm --filter ./backend run build && rm -rf backend/dist/public && cp -r frontend/dist backend/dist/public",
+    "start": "node backend/dist/index.js",
+    "test:e2e": "playwright test"
   },
   "dependencies": {
     "concurrently": "^7.6.0"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.62.1"
   }
 }
