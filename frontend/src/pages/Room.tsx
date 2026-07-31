@@ -2,21 +2,25 @@
 
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Container, Grid, Box, Paper } from '@mui/material';
+import { Container, Grid, Box, Paper, CircularProgress } from '@mui/material';
 import { useSocket } from '../context/SocketContext';
 import RoomHeader from '../components/RoomHeader';
 import ParticipantsList from '../components/ParticipantsList';
 import VotingSection from '../components/VotingSection';
 import VotesDisplay from '../components/VotesDisplay';
 import InviteButton from '../components/InviteButton';
+import { getUserId } from '../utils/userSession';
 
 interface User {
   id: string;
   name: string;
+  socketId: string;
 }
 
 interface RoomData {
+  id: string;
   name: string;
+  creatorId: string;
   users: User[];
   votes: { [key: string]: number | string | null };
   showVotes: boolean;
@@ -29,8 +33,10 @@ const Room: React.FC = () => {
   const navigate = useNavigate();
   const socket = useSocket();
 
+  const userId = getUserId();
   const [userName, setUserName] = useState<string>(localStorage.getItem('userName') || '');
   const [roomName, setRoomName] = useState<string>('');
+  const [creatorId, setCreatorId] = useState<string>('');
   const [users, setUsers] = useState<User[]>([]);
   const [votes, setVotes] = useState<{ [key: string]: number | string | null }>({});
   const [selectedVote, setSelectedVote] = useState<number | string | null>(null);
@@ -44,32 +50,43 @@ const Room: React.FC = () => {
   }, [roomId, userName, navigate]);
 
   useEffect(() => {
-    if (roomId && userName) {
+    if (roomId && userName && socket) {
       localStorage.setItem('roomId', roomId);
       localStorage.setItem('userName', userName);
 
-      socket.emit('joinRoom', { roomId, userName }, ({ success, room }: { success: boolean; room: RoomData }) => {
-        if (success) {
-          setUsers(room.users);
-          setVotes(room.votes);
-          setRoomName(room.name);
-          setShowVotes(room.showVotes);
-          if (room.users[0]?.id === socket.id) {
-            setIsCreator(true);
-          }
+      const joinPayload = { roomId, userName, userId };
+
+      const handleRoomState = (room: RoomData) => {
+        setUsers(room.users);
+        setVotes(room.votes || {});
+        setRoomName(room.name);
+        setCreatorId(room.creatorId || '');
+        setShowVotes(room.showVotes);
+        setIsCreator(room.creatorId === userId);
+        if (room.votes && room.votes[userId] !== undefined) {
+          setSelectedVote(room.votes[userId]);
+        }
+      };
+
+      socket.emit('joinRoom', joinPayload, ({ success, room }: { success: boolean; room: RoomData }) => {
+        if (success && room) {
+          handleRoomState(room);
         } else {
           navigate('/join');
         }
       });
 
       socket.on('roomData', (room: RoomData) => {
-        setUsers(room.users);
-        setVotes(room.votes);
-        setRoomName(room.name);
+        handleRoomState(room);
       });
 
       socket.on('votesUpdate', (updatedVotes) => {
-        setVotes(updatedVotes);
+        setVotes(updatedVotes || {});
+        if (updatedVotes && updatedVotes[userId] !== undefined) {
+          setSelectedVote(updatedVotes[userId]);
+        } else if (updatedVotes && !(userId in updatedVotes)) {
+          setSelectedVote(null);
+        }
       });
 
       socket.on('toggleVotes', (showVotesState: boolean) => {
@@ -82,11 +99,11 @@ const Room: React.FC = () => {
         socket.off('toggleVotes');
       };
     }
-  }, [roomId, userName, socket, navigate]);
+  }, [roomId, userName, userId, socket, navigate]);
 
   const handleVote = (vote: number | string) => {
     if (roomId) {
-      socket.emit('vote', { roomId, userId: socket.id, vote }, ({ success }: { success: boolean }) => {
+      socket.emit('vote', { roomId, userId, vote }, ({ success }: { success: boolean }) => {
         if (success) {
           setSelectedVote(vote);
         }
@@ -96,12 +113,12 @@ const Room: React.FC = () => {
 
   const handleResetVotes = () => {
     if (roomId && isCreator) {
-      socket.emit('resetVotes', { roomId }, ({ success }: { success: boolean }) => {
+      socket.emit('resetVotes', { roomId }, ({ success, error }: { success: boolean; error?: string }) => {
         if (success) {
           setShowVotes(false);
           setSelectedVote(null);
         } else {
-          alert('Failed to reset votes');
+          alert(error || 'Failed to reset votes');
         }
       });
     }
@@ -109,7 +126,7 @@ const Room: React.FC = () => {
 
   const handleResetMyVote = () => {
     if (roomId) {
-      socket.emit('vote', { roomId, userId: socket.id, vote: null }, ({ success }: { success: boolean }) => {
+      socket.emit('vote', { roomId, userId, vote: null }, ({ success }: { success: boolean }) => {
         if (success) {
           setSelectedVote(null);
         } else {
@@ -127,25 +144,35 @@ const Room: React.FC = () => {
   };
 
   if (!roomId || !userName) {
-    return <div>Loading...</div>;
+    return (
+      <Box display="flex" justifyContent="center" alignItems="center" minHeight="50vh">
+        <CircularProgress />
+      </Box>
+    );
   }
 
   return (
-    <Container maxWidth="md" sx={{ marginTop: 5 }}>
+    <Container maxWidth="lg" sx={{ my: 4 }}>
       <Paper
-        elevation={3}
-        sx={{ padding: 3, borderRadius: '10px', backgroundColor: '#f7f9fc', minHeight: '80vh' }}
+        elevation={4}
+        sx={{
+          p: { xs: 2, sm: 4 },
+          borderRadius: 3,
+          backgroundColor: '#ffffff',
+          minHeight: '80vh',
+          boxShadow: '0 10px 30px rgba(0,0,0,0.05)',
+        }}
       >
-        <RoomHeader roomId={roomId} roomName={roomName} userName={userName} />
-        <Box textAlign="center" sx={{ marginBottom: 3 }}>
+        <RoomHeader roomId={roomId} roomName={roomName} userName={userName} isCreator={isCreator} />
+        <Box textAlign="center" sx={{ mb: 4 }}>
           <InviteButton roomId={roomId} />
         </Box>
 
-        <Grid container spacing={4}>
-          <Grid item xs={12} md={6}>
-            <ParticipantsList users={users} />
+        <Grid container spacing={3}>
+          <Grid item xs={12} md={5}>
+            <ParticipantsList users={users} votes={votes} showVotes={showVotes} creatorId={creatorId} />
           </Grid>
-          <Grid item xs={12} md={6}>
+          <Grid item xs={12} md={7}>
             <VotingSection
               votingOptions={votingOptions}
               selectedVote={selectedVote}
@@ -155,7 +182,7 @@ const Room: React.FC = () => {
           </Grid>
         </Grid>
 
-        <Box sx={{ marginTop: 4 }}>
+        <Box sx={{ mt: 4 }}>
           <VotesDisplay
             users={users}
             votes={votes}
