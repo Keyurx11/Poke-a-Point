@@ -1,16 +1,15 @@
-// backend/src/index.ts
-
 import express from 'express';
 import http from 'http';
 import { Server, Socket } from 'socket.io';
 import cors from 'cors';
 import path from 'path';
+import { User, Room } from './type';
 
 const app = express();
 
 // CORS configuration
 app.use(cors({
-  origin: '*', // Since frontend and backend are on the same origin, you can set this to '*'
+  origin: '*',
   methods: ['GET', 'POST'],
 }));
 
@@ -25,25 +24,35 @@ const io = new Server(server, {
   },
 });
 
-// TypeScript interfaces
-interface User {
-  id: string;
-  name: string;
-}
-
-interface Room {
-  id: string;
-  name: string;
-  users: User[];
-  votes: { [userId: string]: number | string | null };
-  showVotes: boolean;
-}
-
 // In-memory storage
 const rooms: { [roomId: string]: Room } = {};
 
-// Utility function
+// Utility functions
 const generateId = (): string => Math.random().toString(36).substr(2, 9);
+
+// Sanitize votes to prevent prematurely exposing vote values before reveal
+const getPublicVotes = (room: Room) => {
+  if (room.showVotes) {
+    return room.votes;
+  }
+  const maskedVotes: { [userId: string]: boolean | null } = {};
+  for (const userId in room.votes) {
+    maskedVotes[userId] = room.votes[userId] !== null && room.votes[userId] !== undefined;
+  }
+  return maskedVotes;
+};
+
+const getPublicRoom = (room: Room): Room => {
+  return {
+    ...room,
+    votes: getPublicVotes(room) as { [userId: string]: number | string | null },
+  };
+};
+
+// Helper to find user by socket
+const getUserBySocketId = (room: Room, socketId: string): User | undefined => {
+  return room.users.find((u) => u.socketId === socketId);
+};
 
 // Socket.IO connection handler
 io.on('connection', (socket: Socket) => {
@@ -53,14 +62,16 @@ io.on('connection', (socket: Socket) => {
   socket.on(
     'createRoom',
     (
-      { roomName, userName }: { roomName: string; userName: string },
-      callback: (response: { roomId?: string; error?: string }) => void
+      { roomName, userName, userId }: { roomName: string; userName: string; userId?: string },
+      callback: (response: { roomId?: string; userId?: string; error?: string }) => void
     ) => {
       const roomId = generateId();
+      const actualUserId = userId || generateId();
       const newRoom: Room = {
         id: roomId,
         name: roomName,
-        users: [{ id: socket.id, name: userName }],
+        creatorId: actualUserId,
+        users: [{ id: actualUserId, name: userName, socketId: socket.id }],
         votes: {},
         showVotes: false,
       };
@@ -68,53 +79,34 @@ io.on('connection', (socket: Socket) => {
       rooms[roomId] = newRoom;
       socket.join(roomId);
 
-      callback({ roomId });
+      callback({ roomId, userId: actualUserId });
     }
   );
 
-  // Join Room
-  socket.on(
-    'joinRoom',
-    (
-      { roomId, userName }: { roomId: string; userName: string },
-      callback: (response: { success: boolean; room?: Room; error?: string }) => void
-    ) => {
-      const room = rooms[roomId];
-      if (room) {
-        const userExists = room.users.some((user) => user.id === socket.id);
-        if (!userExists) {
-          room.users.push({ id: socket.id, name: userName });
-        }
-        socket.join(roomId);
-        callback({ success: true, room });
-        io.to(roomId).emit('roomData', room);
+  // Join / Rejoin Room
+  const handleJoin = (
+    { roomId, userName, userId }: { roomId: string; userName: string; userId: string },
+    callback: (response: { success: boolean; room?: Room; error?: string }) => void
+  ) => {
+    const room = rooms[roomId];
+    if (room) {
+      const existingUser = room.users.find((u) => u.id === userId);
+      if (existingUser) {
+        existingUser.socketId = socket.id;
+        existingUser.name = userName;
       } else {
-        callback({ success: false, error: 'Room not found' });
+        room.users.push({ id: userId, name: userName, socketId: socket.id });
       }
+      socket.join(roomId);
+      callback({ success: true, room: getPublicRoom(room) });
+      io.to(roomId).emit('roomData', getPublicRoom(room));
+    } else {
+      callback({ success: false, error: 'Room not found' });
     }
-  );
+  };
 
-  // Rejoin Room
-  socket.on(
-    'rejoinRoom',
-    (
-      { roomId, userName }: { roomId: string; userName: string },
-      callback: (response: { success: boolean; room?: Room; error?: string }) => void
-    ) => {
-      const room = rooms[roomId];
-      if (room) {
-        const userExists = room.users.some((user) => user.id === socket.id);
-        if (!userExists) {
-          room.users.push({ id: socket.id, name: userName });
-        }
-        socket.join(roomId);
-        callback({ success: true, room });
-        io.to(roomId).emit('roomData', room);
-      } else {
-        callback({ success: false, error: 'Room not found' });
-      }
-    }
-  );
+  socket.on('joinRoom', handleJoin);
+  socket.on('rejoinRoom', handleJoin);
 
   // Vote Event
   socket.on(
@@ -125,8 +117,12 @@ io.on('connection', (socket: Socket) => {
     ) => {
       const room = rooms[roomId];
       if (room) {
-        room.votes[userId] = vote;
-        io.to(roomId).emit('votesUpdate', room.votes);
+        if (vote === null) {
+          delete room.votes[userId];
+        } else {
+          room.votes[userId] = vote;
+        }
+        io.to(roomId).emit('votesUpdate', getPublicVotes(room));
         callback({ success: true });
       } else {
         callback({ success: false, error: 'Room not found' });
@@ -134,15 +130,20 @@ io.on('connection', (socket: Socket) => {
     }
   );
 
-  // Reset Votes Event
+  // Reset Votes Event (Host Authorized)
   socket.on(
     'resetVotes',
     ({ roomId }: { roomId: string }, callback: (response: { success: boolean; error?: string }) => void) => {
       const room = rooms[roomId];
       if (room) {
+        const user = getUserBySocketId(room, socket.id);
+        if (user && user.id !== room.creatorId) {
+          return callback({ success: false, error: 'Unauthorized: Only session host can reset votes' });
+        }
+
         room.votes = {};
         room.showVotes = false;
-        io.to(roomId).emit('votesUpdate', room.votes);
+        io.to(roomId).emit('votesUpdate', getPublicVotes(room));
         io.to(roomId).emit('toggleVotes', room.showVotes);
         callback({ success: true });
       } else {
@@ -151,7 +152,7 @@ io.on('connection', (socket: Socket) => {
     }
   );
 
-  // Toggle Votes Visibility Event
+  // Toggle Votes Visibility Event (Host Authorized)
   socket.on(
     'toggleVotes',
     (
@@ -160,8 +161,15 @@ io.on('connection', (socket: Socket) => {
     ) => {
       const room = rooms[roomId];
       if (room) {
+        const user = getUserBySocketId(room, socket.id);
+        if (user && user.id !== room.creatorId) {
+          if (callback) callback({ success: false, error: 'Unauthorized: Only session host can reveal/hide votes' });
+          return;
+        }
+
         room.showVotes = showVotes;
         io.to(roomId).emit('toggleVotes', showVotes);
+        io.to(roomId).emit('votesUpdate', getPublicVotes(room));
         if (callback) callback({ success: true });
       } else {
         if (callback) callback({ success: false, error: 'Room not found' });
@@ -169,17 +177,36 @@ io.on('connection', (socket: Socket) => {
     }
   );
 
-  // Handle Disconnect
+  // Handle Disconnect with Grace Period for page refreshes
   socket.on('disconnect', () => {
     console.log(`User disconnected: ${socket.id}`);
     for (const roomId in rooms) {
       const room = rooms[roomId];
-      const userIndex = room.users.findIndex((user) => user.id === socket.id);
-      if (userIndex !== -1) {
-        room.users.splice(userIndex, 1);
-        delete room.votes[socket.id];
-        io.to(roomId).emit('roomData', room);
-        io.to(roomId).emit('votesUpdate', room.votes);
+      const user = room.users.find((u) => u.socketId === socket.id);
+      if (user) {
+        user.socketId = '';
+        
+        // Wait 3 seconds before cleaning up user to allow smooth page refresh / reconnection
+        setTimeout(() => {
+          // If user hasn't reconnected with a new socketId within 3 seconds
+          if (rooms[roomId] && user.socketId === '') {
+            const index = room.users.findIndex((u) => u.id === user.id);
+            if (index !== -1) {
+              room.users.splice(index, 1);
+              delete room.votes[user.id];
+
+              if (room.users.length === 0) {
+                delete rooms[roomId];
+              } else {
+                if (room.creatorId === user.id && room.users.length > 0) {
+                  room.creatorId = room.users[0].id;
+                }
+                io.to(roomId).emit('roomData', getPublicRoom(room));
+                io.to(roomId).emit('votesUpdate', getPublicVotes(room));
+              }
+            }
+          }
+        }, 3000);
         break;
       }
     }

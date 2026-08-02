@@ -22,83 +22,160 @@ const VotesDisplay: React.FC<VotesDisplayProps> = ({
   handleResetVotes,
   handleToggleVotes,
 }) => {
-  const calculateAverageVote = () => {
+  const getAverageDetails = () => {
     const voteValues = users
-      .map((user) => (typeof votes[user.id] === 'number' ? Number(votes[user.id]) : null))
-      .filter((vote) => vote !== null) as number[];
+      .map((user) => {
+        const val = votes[user.id];
+        if (val !== null && val !== undefined && !isNaN(Number(val)) && val !== '?') {
+          return Number(val);
+        }
+        return null;
+      })
+      .filter((vote): vote is number => vote !== null);
 
     if (voteValues.length === 0) return null;
 
-    const average = voteValues.reduce((sum, vote) => sum + vote, 0) / voteValues.length;
+    const sum = voteValues.reduce((acc, curr) => acc + curr, 0);
+    const avg = sum / voteValues.length;
+    const formattedAvg = Number.isInteger(avg) ? avg.toString() : avg.toFixed(1);
 
-    const closestVote = votingOptions
-      .filter((option) => typeof option === 'number')
-      .reduce((prev, curr) =>
-        Math.abs((curr as number) - average) < Math.abs((prev as number) - average) ? curr : prev
+    const numericOptions = votingOptions.filter((opt): opt is number => typeof opt === 'number');
+    let closestOpt = numericOptions[0];
+    if (numericOptions.length > 0) {
+      closestOpt = numericOptions.reduce((prev, curr) =>
+        Math.abs(curr - avg) < Math.abs(prev - avg) ? curr : prev
       );
+    }
 
-    return closestVote;
+    return { average: formattedAvg, closest: closestOpt, count: voteValues.length };
   };
 
-  const averageVote = calculateAverageVote();
+  const stats = getAverageDetails();
 
   return (
-    <Paper sx={{ padding: 2 }}>
-      <Box display="flex" justifyContent="space-between" alignItems="center" marginBottom={2}>
-        <Typography variant="h6">
-          {showVotes ? 'Votes' : 'Votes Hidden'}
-        </Typography>
+    <Paper
+      elevation={2}
+      sx={{
+        p: 3,
+        borderRadius: 3,
+        background: 'linear-gradient(145deg, #f8fafc 0%, #edf2f7 100%)',
+        border: '1px solid #e2e8f0',
+      }}
+    >
+      <Box
+        display="flex"
+        flexDirection={{ xs: 'column', sm: 'row' }}
+        justifyContent="space-between"
+        alignItems={{ xs: 'stretch', sm: 'center' }}
+        gap={2}
+        marginBottom={3}
+      >
+        <Box>
+          <Typography variant="h6" fontWeight="bold" color="textPrimary">
+            {showVotes ? 'Session Results' : 'Voting Results (Hidden)'}
+          </Typography>
+          <Typography variant="body2" color="textSecondary">
+            {users.length} {users.length === 1 ? 'Participant' : 'Participants'}
+          </Typography>
+        </Box>
 
-        {/* Only show the buttons if the user is the creator */}
         {isCreator && (
-          <Box>
+          <Box display="flex" gap={1}>
             <Button
-              variant="outlined"
-              color="primary"
+              variant="contained"
+              color={showVotes ? 'warning' : 'success'}
               onClick={handleToggleVotes}
-              sx={{ marginRight: 1 }}
+              sx={{ fontWeight: 'bold', borderRadius: 2 }}
             >
               {showVotes ? 'Hide Points' : 'Show Points'}
             </Button>
-            <Button variant="outlined" color="secondary" onClick={handleResetVotes}>
+            <Button
+              variant="outlined"
+              color="error"
+              onClick={handleResetVotes}
+              sx={{ fontWeight: 'bold', borderRadius: 2 }}
+            >
               Reset All Votes
             </Button>
           </Box>
         )}
       </Box>
 
-      {showVotes && averageVote !== null && (
-        <Typography
-          variant="subtitle1"
-          gutterBottom
-          sx={{ textAlign: 'center', fontWeight: 'bold', marginBottom: 2 }}
+      {showVotes && stats && (
+        <Paper
+          elevation={0}
+          sx={{
+            p: 2,
+            mb: 3,
+            textAlign: 'center',
+            background: 'linear-gradient(135deg, #1E293B 0%, #0F172A 100%)',
+            color: '#ffffff',
+            borderRadius: 2,
+          }}
         >
-          Average: {averageVote}
-        </Typography>
+          <Typography variant="h5" fontWeight="bold">
+            Average: {stats.average} Story Points
+          </Typography>
+          <Typography variant="body2" sx={{ opacity: 0.8, mt: 0.5 }}>
+            Nearest Poker Card: {stats.closest} ({stats.count} {stats.count === 1 ? 'numeric vote' : 'numeric votes'})
+          </Typography>
+        </Paper>
       )}
 
       <Grid container spacing={2}>
-        {users.map((user) => (
-          <Grid item xs={6} sm={4} md={3} key={user.id}>
-            <Card variant="outlined" sx={{ backgroundColor: '#f9f9f9', borderRadius: '8px' }}>
-              <CardContent>
-                <Typography variant="h6" gutterBottom>
-                  {user.name}
-                </Typography>
-                <Typography
-                  variant="subtitle1"
-                  sx={{ fontWeight: 'bold', fontSize: '1.5rem', textAlign: 'center' }}
-                >
-                  {votes[user.id] === null || votes[user.id] === undefined
-                    ? 'No vote'
-                    : showVotes
-                    ? votes[user.id]
-                    : 'Voted'}
-                </Typography>
-              </CardContent>
-            </Card>
-          </Grid>
-        ))}
+        {users.map((user) => {
+          const userVote = votes[user.id];
+          const hasVoted = userVote !== undefined && userVote !== null;
+
+          return (
+            <Grid item xs={6} sm={4} md={3} key={user.id}>
+              <Card
+                variant="outlined"
+                sx={{
+                  borderRadius: 2.5,
+                  textAlign: 'center',
+                  transition: 'transform 0.2s, box-shadow 0.2s',
+                  '&:hover': {
+                    transform: 'translateY(-2px)',
+                    boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
+                  },
+                  border: hasVoted
+                    ? showVotes
+                      ? '2px solid #3B82F6'
+                      : '2px solid #10B981'
+                    : '1px solid #E2E8F0',
+                  backgroundColor: hasVoted ? '#F0FDF4' : '#FFFFFF',
+                }}
+              >
+                <CardContent sx={{ py: 2 }}>
+                  <Typography variant="subtitle1" fontWeight="bold" noWrap>
+                    {user.name}
+                  </Typography>
+                  <Box
+                    sx={{
+                      mt: 1.5,
+                      py: 1,
+                      px: 2,
+                      borderRadius: 2,
+                      display: 'inline-block',
+                      minWidth: '60px',
+                      backgroundColor: !hasVoted
+                        ? '#F1F5F9'
+                        : showVotes
+                        ? '#3B82F6'
+                        : '#10B981',
+                      color: !hasVoted ? '#64748B' : '#FFFFFF',
+                    }}
+                  >
+                    <Typography variant="h6" fontWeight="bold">
+                      {!hasVoted ? 'Thinking...' : showVotes ? userVote : '✓ Voted'}
+                    </Typography>
+                  </Box>
+                </CardContent>
+              </Card>
+            </Grid>
+          );
+        })}
       </Grid>
     </Paper>
   );
