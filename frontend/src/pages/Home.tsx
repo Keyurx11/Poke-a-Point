@@ -4,28 +4,136 @@ import React from 'react';
 import { Container, Typography, Button, Stack } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 
+import React from 'react';
+import { Container, Typography, Button, Stack, Box, Paper, Grid } from '@mui/material';
+import { useNavigate } from 'react-router-dom';
+import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
+import LoginIcon from '@mui/icons-material/Login';
+import SpeedIcon from '@mui/icons-material/Speed';
+import VisibilityIcon from '@mui/icons-material/Visibility';
+import GroupsIcon from '@mui/icons-material/Groups';
+
 const Home: React.FC = () => {
   const navigate = useNavigate();
 
   return (
-    <Container maxWidth="sm" sx={{ textAlign: 'center', marginTop: 8 }}>
-      <Typography variant="h4" gutterBottom sx={{ fontWeight: 'bold', color: '#1565C0' }}>
-        Agile Teams,
-      </Typography>
-      <Typography variant="h4" gutterBottom sx={{ fontWeight: 'bold',  color: '#1565C0' }}>
-        Simplified!
-      </Typography>
-      <Typography variant="body1" gutterBottom sx={{ mb: 4 }}>
-        A collaborative tool for agile teams to estimate and plan their projects effectively.
-      </Typography>
-      <Stack spacing={2} direction="column" sx={{ mb: 4 }}>
-        <Button variant="contained" color="primary" onClick={() => navigate('/create')}>
-          Create Room
-        </Button>
-        <Button variant="outlined" color="primary" onClick={() => navigate('/join')}>
-          Join Room
-        </Button>
-      </Stack>
+    <Container maxWidth="md" sx={{ mt: 6, mb: 8 }}>
+      <Paper
+        elevation={0}
+        sx={{
+          p: { xs: 4, sm: 6 },
+          borderRadius: 4,
+          background: 'linear-gradient(135deg, #1E293B 0%, #0F172A 100%)',
+          color: '#ffffff',
+          textAlign: 'center',
+          boxShadow: '0 20px 40px rgba(15, 23, 42, 0.15)',
+        }}
+      >
+        <Typography
+          variant="h3"
+          component="h1"
+          fontWeight="800"
+          gutterBottom
+          sx={{
+            background: 'linear-gradient(90deg, #60A5FA 0%, #93C5FD 100%)',
+            WebkitBackgroundClip: 'text',
+            WebkitTextFillColor: 'transparent',
+            letterSpacing: '-0.5px',
+          }}
+        >
+          Agile Teams, Simplified!
+        </Typography>
+
+        <Typography variant="h6" sx={{ opacity: 0.85, maxW: '600px', mx: 'auto', mb: 5, fontWeight: 400 }}>
+          Real-time collaborative planning poker for agile engineering teams. Fast, anonymous, and accurate story point estimation.
+        </Typography>
+
+        <Stack
+          direction={{ xs: 'column', sm: 'row' }}
+          spacing={2.5}
+          justifyContent="center"
+          alignItems="center"
+          sx={{ mb: 4 }}
+        >
+          <Button
+            variant="contained"
+            size="large"
+            startIcon={<AddCircleOutlineIcon />}
+            onClick={() => navigate('/create')}
+            sx={{
+              py: 1.75,
+              px: 4,
+              fontSize: '1.1rem',
+              fontWeight: 'bold',
+              borderRadius: 3,
+              backgroundColor: '#2563EB',
+              '&:hover': { backgroundColor: '#1D4ED8' },
+              boxShadow: '0 10px 20px rgba(37, 99, 235, 0.3)',
+            }}
+          >
+            Create Room
+          </Button>
+
+          <Button
+            variant="outlined"
+            size="large"
+            startIcon={<LoginIcon />}
+            onClick={() => navigate('/join')}
+            sx={{
+              py: 1.75,
+              px: 4,
+              fontSize: '1.1rem',
+              fontWeight: 'bold',
+              borderRadius: 3,
+              color: '#ffffff',
+              borderColor: 'rgba(255, 255, 255, 0.3)',
+              '&:hover': {
+                borderColor: '#ffffff',
+                backgroundColor: 'rgba(255, 255, 255, 0.05)',
+              },
+            }}
+          >
+            Join Room
+          </Button>
+        </Stack>
+      </Paper>
+
+      {/* Feature Highlight Cards */}
+      <Grid container spacing={3} sx={{ mt: 3 }}>
+        <Grid item xs={12} sm={4}>
+          <Paper elevation={1} sx={{ p: 3, borderRadius: 3, textAlign: 'center', height: '100%' }}>
+            <SpeedIcon color="primary" sx={{ fontSize: 40, mb: 1 }} />
+            <Typography variant="h6" fontWeight="bold" gutterBottom>
+              Instant Sync
+            </Typography>
+            <Typography variant="body2" color="textSecondary">
+              Real-time WebSockets keep all team members in sync with zero latency.
+            </Typography>
+          </Paper>
+        </Grid>
+        <Grid item xs={12} sm={4}>
+          <Paper elevation={1} sx={{ p: 3, borderRadius: 3, textAlign: 'center', height: '100%' }}>
+            <VisibilityIcon color="primary" sx={{ fontSize: 40, mb: 1 }} />
+            <Typography variant="h6" fontWeight="bold" gutterBottom>
+              Hidden Votes
+            </Typography>
+            <Typography variant="body2" color="textSecondary">
+              Prevent voting bias by keeping points hidden until everyone has voted.
+            </Typography>
+          </Paper>
+        </Grid>
+        <Grid item xs={12} sm={4}>
+          <Paper elevation={1} sx={{ p: 3, borderRadius: 3, textAlign: 'center', height: '100%' }}>
+            <GroupsIcon color="primary" sx={{ fontSize: 40, mb: 1 }} />
+            <Typography variant="h6" fontWeight="bold" gutterBottom>
+              Team Collaboration
+            </Typography>
+            <Typography variant="body2" color="textSecondary">
+              Share quick invite links for seamless sprint planning sessions.
+            </Typography>
+          </Paper>
+        </Grid>
+      </Grid>
     </Container>
   );
 };
