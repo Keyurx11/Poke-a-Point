@@ -54,6 +54,8 @@ const getUserBySocketId = (room: Room, socketId: string): User | undefined => {
   return room.users.find((u) => u.socketId === socketId);
 };
 
+const DEFAULT_VOTING_OPTIONS = [1, 2, 3, 5, 8, 13, 21, '?'];
+
 // Socket.IO connection handler
 io.on('connection', (socket: Socket) => {
   console.log(`User connected: ${socket.id}`);
@@ -62,7 +64,7 @@ io.on('connection', (socket: Socket) => {
   socket.on(
     'createRoom',
     (
-      { roomName, userName, userId }: { roomName: string; userName: string; userId?: string },
+      { roomName, userName, userId, votingOptions }: { roomName: string; userName: string; userId?: string; votingOptions?: (number | string)[] },
       callback: (response: { roomId?: string; userId?: string; error?: string }) => void
     ) => {
       const roomId = generateId();
@@ -74,6 +76,7 @@ io.on('connection', (socket: Socket) => {
         users: [{ id: actualUserId, name: userName, socketId: socket.id }],
         votes: {},
         showVotes: false,
+        votingOptions: (votingOptions && votingOptions.length > 0) ? votingOptions : DEFAULT_VOTING_OPTIONS,
       };
 
       rooms[roomId] = newRoom;

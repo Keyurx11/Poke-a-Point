@@ -11,4 +11,5 @@ export interface Room {
   users: User[];
   votes: { [userId: string]: number | string | null };
   showVotes: boolean;
+  votingOptions: (number | string)[];
 }

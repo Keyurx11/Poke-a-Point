@@ -23,31 +23,61 @@ const VotesDisplay: React.FC<VotesDisplayProps> = ({
   handleToggleVotes,
 }) => {
   const getAverageDetails = () => {
-    const voteValues = users
-      .map((user) => {
-        const val = votes[user.id];
-        if (val !== null && val !== undefined && !isNaN(Number(val)) && val !== '?') {
-          return Number(val);
+    const validVotes = users
+      .map((user) => votes[user.id])
+      .filter((val): val is number | string => val !== null && val !== undefined && val !== '?');
+
+    if (validVotes.length === 0) return null;
+
+    const numericVotes = validVotes
+      .filter((val) => typeof val === 'number' || (!isNaN(Number(val)) && typeof val === 'string'))
+      .map((val) => Number(val));
+
+    if (numericVotes.length > 0) {
+      const sum = numericVotes.reduce((acc, curr) => acc + curr, 0);
+      const avg = sum / numericVotes.length;
+      const formattedAvg = Number.isInteger(avg) ? avg.toString() : avg.toFixed(1);
+
+      const numericOptions = votingOptions
+        .map((opt) => Number(opt))
+        .filter((opt) => !isNaN(opt));
+
+      let closestOpt = numericOptions[0];
+      if (numericOptions.length > 0) {
+        closestOpt = numericOptions.reduce((prev, curr) =>
+          Math.abs(curr - avg) < Math.abs(prev - avg) ? curr : prev
+        );
+      }
+
+      return {
+        isNumeric: true,
+        average: formattedAvg,
+        closest: closestOpt,
+        count: numericVotes.length,
+      };
+    } else {
+      // Frequency count for non-numeric scales (e.g. T-Shirt sizes)
+      const counts: { [key: string]: number } = {};
+      validVotes.forEach((v) => {
+        const key = String(v);
+        counts[key] = (counts[key] || 0) + 1;
+      });
+
+      let mostPopular = String(validVotes[0]);
+      let maxCount = 0;
+      for (const key in counts) {
+        if (counts[key] > maxCount) {
+          maxCount = counts[key];
+          mostPopular = key;
         }
-        return null;
-      })
-      .filter((vote): vote is number => vote !== null);
+      }
 
-    if (voteValues.length === 0) return null;
-
-    const sum = voteValues.reduce((acc, curr) => acc + curr, 0);
-    const avg = sum / voteValues.length;
-    const formattedAvg = Number.isInteger(avg) ? avg.toString() : avg.toFixed(1);
-
-    const numericOptions = votingOptions.filter((opt): opt is number => typeof opt === 'number');
-    let closestOpt = numericOptions[0];
-    if (numericOptions.length > 0) {
-      closestOpt = numericOptions.reduce((prev, curr) =>
-        Math.abs(curr - avg) < Math.abs(prev - avg) ? curr : prev
-      );
+      return {
+        isNumeric: false,
+        mostPopular,
+        count: validVotes.length,
+      };
     }
-
-    return { average: formattedAvg, closest: closestOpt, count: voteValues.length };
   };
 
   const stats = getAverageDetails();
@@ -113,12 +143,25 @@ const VotesDisplay: React.FC<VotesDisplayProps> = ({
             borderRadius: 2,
           }}
         >
-          <Typography variant="h5" fontWeight="bold">
-            Average: {stats.average} Story Points
-          </Typography>
-          <Typography variant="body2" sx={{ opacity: 0.8, mt: 0.5 }}>
-            Nearest Poker Card: {stats.closest} ({stats.count} {stats.count === 1 ? 'numeric vote' : 'numeric votes'})
-          </Typography>
+          {stats.isNumeric ? (
+            <>
+              <Typography variant="h5" fontWeight="bold">
+                Average: {stats.average} Story Points
+              </Typography>
+              <Typography variant="body2" sx={{ opacity: 0.8, mt: 0.5 }}>
+                Nearest Poker Card: {stats.closest} ({stats.count} {stats.count === 1 ? 'numeric vote' : 'numeric votes'})
+              </Typography>
+            </>
+          ) : (
+            <>
+              <Typography variant="h5" fontWeight="bold">
+                Most Popular Vote: {stats.mostPopular}
+              </Typography>
+              <Typography variant="body2" sx={{ opacity: 0.8, mt: 0.5 }}>
+                Total Votes Submitted: {stats.count}
+              </Typography>
+            </>
+          )}
         </Paper>
       )}
 

@@ -24,9 +24,10 @@ interface RoomData {
   users: User[];
   votes: { [key: string]: number | string | null };
   showVotes: boolean;
+  votingOptions?: (number | string)[];
 }
 
-const votingOptions = [1, 2, 3, 5, 8, 13, 21, '?'];
+const DEFAULT_VOTING_OPTIONS = [1, 2, 3, 5, 8, 13, 21, '?'];
 
 const Room: React.FC = () => {
   const { roomId } = useParams<{ roomId: string }>();
@@ -42,6 +43,7 @@ const Room: React.FC = () => {
   const [selectedVote, setSelectedVote] = useState<number | string | null>(null);
   const [showVotes, setShowVotes] = useState(false);
   const [isCreator, setIsCreator] = useState(false);
+  const [votingOptions, setVotingOptions] = useState<(number | string)[]>(DEFAULT_VOTING_OPTIONS);
 
   useEffect(() => {
     if (!roomId || !userName) {
@@ -63,6 +65,9 @@ const Room: React.FC = () => {
         setCreatorId(room.creatorId || '');
         setShowVotes(room.showVotes);
         setIsCreator(room.creatorId === userId);
+        if (room.votingOptions && room.votingOptions.length > 0) {
+          setVotingOptions(room.votingOptions);
+        }
         if (room.votes && room.votes[userId] !== undefined) {
           setSelectedVote(room.votes[userId]);
         }

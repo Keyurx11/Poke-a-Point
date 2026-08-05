@@ -1,17 +1,50 @@
 // src/pages/CreateRoom.tsx
 
 import React, { useState } from 'react';
-import { Container, TextField, Button, Typography, Box, Paper } from '@mui/material';
+import { Container, TextField, Button, Typography, Box, Paper, MenuItem, FormControl, InputLabel, Select } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import { useSocket } from '../context/SocketContext';
 import { getUserId } from '../utils/userSession';
 
+const DECK_PRESETS: { [key: string]: { label: string; options: (number | string)[] } } = {
+  fibonacci: {
+    label: 'Standard Fibonacci (1, 2, 3, 5, 8, 13, 21, ?)',
+    options: [1, 2, 3, 5, 8, 13, 21, '?'],
+  },
+  modified: {
+    label: 'Modified Fibonacci (0, 0.5, 1, 2, 3, 5, 8, 13, 20, 40, 100, ☕, ?)',
+    options: [0, 0.5, 1, 2, 3, 5, 8, 13, 20, 40, 100, '☕', '?'],
+  },
+  tshirt: {
+    label: 'T-Shirt Sizes (XS, S, M, L, XL, XXL, ?)',
+    options: ['XS', 'S', 'M', 'L', 'XL', 'XXL', '?'],
+  },
+  custom: {
+    label: 'Custom Deck...',
+    options: [],
+  },
+};
+
 const CreateRoom: React.FC = () => {
   const [roomName, setRoomName] = useState('');
   const [userName, setUserName] = useState(localStorage.getItem('userName') || '');
+  const [deckType, setDeckType] = useState('fibonacci');
+  const [customDeckInput, setCustomDeckInput] = useState('');
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
   const socket = useSocket();
+
+  const getSelectedVotingOptions = (): (number | string)[] => {
+    if (deckType !== 'custom') {
+      return DECK_PRESETS[deckType].options;
+    }
+    const items = customDeckInput
+      .split(',')
+      .map((item) => item.trim())
+      .filter((item) => item.length > 0)
+      .map((item) => (!isNaN(Number(item)) ? Number(item) : item));
+    return items.length > 0 ? items : DECK_PRESETS.fibonacci.options;
+  };
 
   const handleCreate = () => {
     if (!roomName.trim() || !userName.trim()) {
@@ -27,10 +60,11 @@ const CreateRoom: React.FC = () => {
     setError(null);
     const userId = getUserId();
     localStorage.setItem('userName', userName.trim());
+    const votingOptions = getSelectedVotingOptions();
 
     socket.emit(
       'createRoom',
-      { roomName: roomName.trim(), userName: userName.trim(), userId },
+      { roomName: roomName.trim(), userName: userName.trim(), userId, votingOptions },
       ({ roomId, error: createError }: { roomId?: string; userId?: string; error?: string }) => {
         if (roomId) {
           console.log(`Room created with ID: ${roomId}`);
@@ -44,7 +78,7 @@ const CreateRoom: React.FC = () => {
   };
 
   return (
-    <Container maxWidth="xs">
+    <Container maxWidth="sm">
       <Paper
         elevation={6}
         sx={{
@@ -83,11 +117,41 @@ const CreateRoom: React.FC = () => {
             placeholder="e.g. Alice"
             required
           />
+
+          <FormControl fullWidth margin="normal">
+            <InputLabel id="deck-preset-label">Estimation Deck Scale</InputLabel>
+            <Select
+              labelId="deck-preset-label"
+              value={deckType}
+              label="Estimation Deck Scale"
+              onChange={(e) => setDeckType(e.target.value as string)}
+            >
+              <MenuItem value="fibonacci">Standard Fibonacci (1, 2, 3, 5, 8, 13, 21, ?)</MenuItem>
+              <MenuItem value="modified">Modified Fibonacci (0, 0.5, 1, 2, 3, 5, 8, 13, 20, 40, 100, ☕, ?)</MenuItem>
+              <MenuItem value="tshirt">T-Shirt Sizes (XS, S, M, L, XL, XXL, ?)</MenuItem>
+              <MenuItem value="custom">Custom Scale...</MenuItem>
+            </Select>
+          </FormControl>
+
+          {deckType === 'custom' && (
+            <TextField
+              fullWidth
+              label="Custom Cards (comma separated)"
+              variant="outlined"
+              margin="normal"
+              value={customDeckInput}
+              onChange={(e) => setCustomDeckInput(e.target.value)}
+              placeholder="e.g. 1, 2, 4, 8, 16, ?"
+              helperText="Enter estimation values separated by commas"
+            />
+          )}
+
           {error && (
             <Typography color="error" variant="body2" sx={{ mt: 1 }}>
               {error}
             </Typography>
           )}
+
           <Button
             type="submit"
             variant="contained"
