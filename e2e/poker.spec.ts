@@ -79,4 +79,25 @@ test.describe('Poke-a-Point Planning Poker E2E Suite', () => {
     await aliceContext.close();
     await bobContext.close();
   });
+
+  test('T-Shirt sizing estimation scale workflow', async ({ page }) => {
+    await page.goto('/create');
+    await page.fill('label:has-text("Room Name") + div input, input[label="Room Name"]', 'Design Sprint');
+    await page.fill('label:has-text("Your Name") + div input, input[label="Your Name"]', 'Charlie');
+
+    // Select T-Shirt Scale
+    await page.click('.MuiSelect-select');
+    await page.click('li[data-value="tshirt"]');
+
+    await page.click('button[type="submit"]');
+
+    await expect(page).toHaveURL(/\/room\/.+/);
+    await expect(page.getByText('Design Sprint')).toBeVisible();
+
+    // Vote M
+    await page.getByRole('button', { name: 'M', exact: true }).click();
+    await page.click('button:has-text("Show Points")');
+
+    await expect(page.getByText('Most Popular Vote: M')).toBeVisible();
+  });
 });
