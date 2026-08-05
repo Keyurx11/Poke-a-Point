@@ -78,6 +78,24 @@ const broadcastVotesUpdate = (room: Room) => {
   });
 };
 
+// Reveal votes automatically once every non-observer member has voted. Called after any
+// change that can affect "has everyone voted" — a new vote, a role switch, or a member
+// leaving — not just the vote event itself.
+const maybeAutoReveal = (room: Room) => {
+  if (!room.autoReveal || room.showVotes) {
+    return;
+  }
+  const voters = room.users.filter((u) => u.role !== 'observer');
+  const allVoted =
+    voters.length > 0 &&
+    voters.every((u) => room.votes[u.id] !== null && room.votes[u.id] !== undefined);
+  if (allVoted) {
+    room.showVotes = true;
+    io.to(room.id).emit('toggleVotes', true);
+    broadcastRoomData(room);
+  }
+};
+
 const DEFAULT_VOTING_OPTIONS = [1, 2, 3, 5, 8, 13, 21, '?'];
 
 // Socket.IO connection handler
@@ -162,8 +180,8 @@ io.on('connection', (socket: Socket) => {
           return callback({ success: false, error: 'Unauthorized: Cannot vote on behalf of another user or without joining room' });
         }
 
-        if (user.role === 'operator') {
-          return callback({ success: false, error: 'Operators cannot vote. Switch to Participant mode to cast a vote.' });
+        if (user.role === 'observer') {
+          return callback({ success: false, error: 'Observers cannot vote. Switch to Participant mode to cast a vote.' });
         }
 
         if (vote === null) {
@@ -172,21 +190,7 @@ io.on('connection', (socket: Socket) => {
           room.votes[userId] = vote;
         }
 
-        // Auto-reveal check
-        if (room.autoReveal && !room.showVotes) {
-          const voters = room.users.filter((u) => u.role !== 'operator');
-          const allVoted =
-            voters.length > 0 &&
-            voters.every(
-              (u) => room.votes[u.id] !== null && room.votes[u.id] !== undefined
-            );
-          if (allVoted) {
-            room.showVotes = true;
-            io.to(roomId).emit('toggleVotes', true);
-            broadcastRoomData(room);
-          }
-        }
-
+        maybeAutoReveal(room);
         broadcastVotesUpdate(room);
         callback({ success: true });
       } else {
@@ -266,11 +270,11 @@ io.on('connection', (socket: Socket) => {
     }
   );
 
-  // Toggle Role (Participant <-> Operator) — any user can switch their own role
+  // Toggle Role (Participant <-> Observer) — any user can switch their own role
   socket.on(
     'toggleRole',
     (
-      { roomId, role }: { roomId: string; role: 'participant' | 'operator' },
+      { roomId, role }: { roomId: string; role: 'participant' | 'observer' },
       callback?: (response: { success: boolean; error?: string }) => void
     ) => {
       const room = rooms[roomId];
@@ -283,11 +287,12 @@ io.on('connection', (socket: Socket) => {
 
         user.role = role;
 
-        // Clear any existing vote when switching to operator
-        if (role === 'operator') {
+        // Clear any existing vote when switching to observer
+        if (role === 'observer') {
           delete room.votes[user.id];
         }
 
+        maybeAutoReveal(room);
         broadcastRoomData(room);
         broadcastVotesUpdate(room);
         if (callback) callback({ success: true });
@@ -321,6 +326,7 @@ io.on('connection', (socket: Socket) => {
                 if (room.creatorId === user.id && room.users.length > 0) {
                   room.creatorId = room.users[0].id;
                 }
+                maybeAutoReveal(room);
                 broadcastRoomData(room);
                 broadcastVotesUpdate(room);
               }
