@@ -22,16 +22,15 @@ Poke-a-Point is an Agile estimation tool built with React, TypeScript, and Vite.
 - **Package Manager:**
   - pnpm
 
-## Features
+## Key Features
 
-- Create and join estimation rooms.
-- Real-time updates with Socket.IO.
-- **Observer / Voter Role Toggle:** Switch between active voter and observer mode seamlessly. Observers are automatically excluded from consensus calculations and auto-reveal thresholds.
-- **One-Click Invite Link:** Clickable invite link pill in the room header for instant team sharing.
-- **Consensus & Auto-Reveal:** Automatic revealing when all voters have cast their votes, with statistical averages, consensus indicators, and distribution breakdowns.
-- Vote anonymously and reveal votes when ready.
-- Reset votes and toggle vote visibility.
-- Responsive dark-mode interface built with Material UI components.
+- 🃏 **Multiple Estimation Deck Scales:** Choose between Standard Fibonacci (`1, 2, 3, 5, 8...`), Modified Fibonacci, T-Shirt Sizes (`XS, S, M, L, XL`), or create a fully custom deck.
+- 👁️ **Observer / Voter Role Toggle:** Switch seamlessly between active voter and spectator/observer mode. Observers can follow along without affecting voting thresholds or blocking consensus.
+- ⚡ **Real-time WebSockets & Auto-Reveal:** Powered by Socket.IO for zero-latency updates. Optional auto-reveal feature automatically flips cards the moment all voters finish casting.
+- 📊 **Consensus & Statistical Breakdown:** Displays team average, consensus indicator badges, and a visual vote distribution chart once votes are revealed.
+- 📋 **One-Click Invite Links:** Compact header pill with copy button allows quick team sharing via direct URL.
+- 🔒 **Privacy First (In-Memory Only):** Zero data persistence. Room data and user votes exist strictly in memory for the duration of the session.
+- 🎨 **Modern Dark-Mode UI:** Clean, responsive interface built with Material UI.
 
 ## Prerequisites
 
