@@ -4,6 +4,7 @@ import { Server, Socket } from 'socket.io';
 import cors from 'cors';
 import path from 'path';
 import fs from 'fs';
+import crypto from 'crypto';
 import { User, Room } from './type';
 
 const app = express();
@@ -28,12 +29,12 @@ const io = new Server(server, {
 // In-memory storage
 const rooms: { [roomId: string]: Room } = {};
 
-// Utility functions
-const generateId = (): string => Math.random().toString(36).substr(2, 9);
+// Utility functions - cryptographically secure random ID generator
+const generateId = (): string => crypto.randomBytes(5).toString('hex');
 
 // Sanitize votes to prevent prematurely exposing vote values before reveal.
 // The viewer can always see their own vote; only other users' votes are masked.
-const getPublicVotes = (room: Room, viewerUserId?: string) => {
+const getPublicVotes = (room: Room, viewerUserId?: string): { [userId: string]: boolean | number | string | null } => {
   if (room.showVotes) {
     return room.votes;
   }
@@ -50,7 +51,7 @@ const getPublicVotes = (room: Room, viewerUserId?: string) => {
 const getPublicRoom = (room: Room, viewerUserId?: string): Room => {
   return {
     ...room,
-    votes: getPublicVotes(room, viewerUserId) as { [userId: string]: number | string | null },
+    votes: getPublicVotes(room, viewerUserId),
   };
 };
 
@@ -156,6 +157,11 @@ io.on('connection', (socket: Socket) => {
     ) => {
       const room = rooms[roomId];
       if (room) {
+        const user = getUserBySocketId(room, socket.id);
+        if (!user || user.id !== userId) {
+          return callback({ success: false, error: 'Unauthorized: Cannot vote on behalf of another user or without joining room' });
+        }
+
         if (vote === null) {
           delete room.votes[userId];
         } else {

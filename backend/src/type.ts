@@ -9,7 +9,7 @@ export interface Room {
   name: string;
   creatorId: string; // persistent userId of room creator
   users: User[];
-  votes: { [userId: string]: number | string | null };
+  votes: { [userId: string]: boolean | number | string | null };
   showVotes: boolean;
   votingOptions: (number | string)[];
   autoReveal: boolean;

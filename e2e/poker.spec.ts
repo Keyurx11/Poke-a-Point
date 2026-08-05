@@ -1,5 +1,32 @@
-import { test, expect } from '@playwright/test';
+import { test, expect, Page } from '@playwright/test';
 import { io as ioClient } from '../frontend/node_modules/socket.io-client';
+
+/**
+ * Shared helper to navigate to room creation, fill details, and submit.
+ */
+async function createRoomHelper(
+  page: Page,
+  roomName: string,
+  userName: string,
+  options?: { scale?: 'tshirt' | 'fibonacci'; autoReveal?: boolean }
+) {
+  await page.goto('/create');
+  await page.fill('label:has-text("Room Name") + div input, input[label="Room Name"]', roomName);
+  await page.fill('label:has-text("Your Name") + div input, input[label="Your Name"]', userName);
+
+  if (options?.scale === 'tshirt') {
+    await page.click('.MuiSelect-select');
+    await page.click('li[data-value="tshirt"]');
+  }
+
+  if (options?.autoReveal) {
+    await page.click('label:has-text("Auto-reveal points when all team members vote")');
+  }
+
+  await page.click('button[type="submit"], button:has-text("Create Room")');
+  await expect(page).toHaveURL(/\/room\/.+/);
+  await expect(page.getByText(roomName)).toBeVisible();
+}
 
 test.describe('Poke-a-Point Planning Poker E2E Suite', () => {
   test('Full multi-user poker workflow with real-time sync, host privileges, and refresh persistence', async ({ browser }) => {
@@ -11,16 +38,7 @@ test.describe('Poke-a-Point Planning Poker E2E Suite', () => {
     await expect(alicePage.getByText('Agile Teams, Simplified!')).toBeVisible();
 
     // 1. Alice Creates Room
-    await alicePage.click('text=Create Room');
-    await expect(alicePage).toHaveURL(/\/create/);
-
-    await alicePage.fill('label:has-text("Room Name") + div input, input[label="Room Name"]', 'Sprint 100 Planning');
-    await alicePage.fill('label:has-text("Your Name") + div input, input[label="Your Name"]', 'Alice');
-    await alicePage.click('button[type="submit"], button:has-text("Create Room")');
-
-    // Verify redirected to room page
-    await expect(alicePage).toHaveURL(/\/room\/.+/);
-    await expect(alicePage.getByText('Sprint 100 Planning')).toBeVisible();
+    await createRoomHelper(alicePage, 'Sprint 100 Planning', 'Alice');
     await expect(alicePage.getByText('Session Host')).toBeVisible();
 
     // Get room URL for Bob
@@ -85,18 +103,7 @@ test.describe('Poke-a-Point Planning Poker E2E Suite', () => {
   });
 
   test('T-Shirt sizing estimation scale workflow', async ({ page }) => {
-    await page.goto('/create');
-    await page.fill('label:has-text("Room Name") + div input, input[label="Room Name"]', 'Design Sprint');
-    await page.fill('label:has-text("Your Name") + div input, input[label="Your Name"]', 'Charlie');
-
-    // Select T-Shirt Scale
-    await page.click('.MuiSelect-select');
-    await page.click('li[data-value="tshirt"]');
-
-    await page.click('button[type="submit"]');
-
-    await expect(page).toHaveURL(/\/room\/.+/);
-    await expect(page.getByText('Design Sprint')).toBeVisible();
+    await createRoomHelper(page, 'Design Sprint', 'Charlie', { scale: 'tshirt' });
 
     // Vote M
     await page.getByRole('button', { name: 'M', exact: true }).click();
@@ -107,17 +114,7 @@ test.describe('Poke-a-Point Planning Poker E2E Suite', () => {
   });
 
   test('Auto-reveal and 100% Consensus banner workflow', async ({ page }) => {
-    await page.goto('/create');
-    await page.fill('label:has-text("Room Name") + div input, input[label="Room Name"]', 'Consensus Room');
-    await page.fill('label:has-text("Your Name") + div input, input[label="Your Name"]', 'Dave');
-
-    // Check Auto-Reveal
-    await page.click('label:has-text("Auto-reveal points when all team members vote")');
-
-    await page.click('button[type="submit"]');
-
-    await expect(page).toHaveURL(/\/room\/.+/);
-    await expect(page.getByText('Consensus Room')).toBeVisible();
+    await createRoomHelper(page, 'Consensus Room', 'Dave', { autoReveal: true });
 
     // Vote 8
     await page.getByRole('button', { name: '8', exact: true }).click();
@@ -130,11 +127,7 @@ test.describe('Poke-a-Point Planning Poker E2E Suite', () => {
     const context = await browser.newContext({ permissions: ['clipboard-read', 'clipboard-write'] });
     const page = await context.newPage();
 
-    await page.goto('/create');
-    await page.fill('label:has-text("Room Name") + div input, input[label="Room Name"]', 'Clipboard Room');
-    await page.fill('label:has-text("Your Name") + div input, input[label="Your Name"]', 'Frank');
-    await page.click('button[type="submit"]');
-    await expect(page).toHaveURL(/\/room\/.+/);
+    await createRoomHelper(page, 'Clipboard Room', 'Frank');
 
     const roomId = page.url().split('/room/')[1];
 
@@ -148,11 +141,7 @@ test.describe('Poke-a-Point Planning Poker E2E Suite', () => {
   });
 
   test('Selected vote card stays highlighted after a refresh while points are hidden', async ({ page }) => {
-    await page.goto('/create');
-    await page.fill('label:has-text("Room Name") + div input, input[label="Room Name"]', 'Refresh Room');
-    await page.fill('label:has-text("Your Name") + div input, input[label="Your Name"]', 'Grace');
-    await page.click('button[type="submit"]');
-    await expect(page).toHaveURL(/\/room\/.+/);
+    await createRoomHelper(page, 'Refresh Room', 'Grace');
 
     const voteButton = page.getByRole('button', { name: '13', exact: true });
     await voteButton.click();
@@ -167,22 +156,24 @@ test.describe('Poke-a-Point Planning Poker E2E Suite', () => {
     await expect(voteButtonAfterReload).toHaveClass(/MuiButton-contained/);
   });
 
-  test('A socket that never joined the room cannot reset votes, toggle reveal, or toggle auto-reveal', async ({ page, baseURL }) => {
+  test('A socket that never joined the room cannot vote, reset votes, toggle reveal, or toggle auto-reveal', async ({ page, baseURL }) => {
     // Set up a real room with a real host, via the UI, so there is something to attack.
-    await page.goto('/create');
-    await page.fill('label:has-text("Room Name") + div input, input[label="Room Name"]', 'Auth Boundary Room');
-    await page.fill('label:has-text("Your Name") + div input, input[label="Your Name"]', 'Hank');
-    await page.click('button[type="submit"]');
-    await expect(page).toHaveURL(/\/room\/.+/);
+    await createRoomHelper(page, 'Auth Boundary Room', 'Hank');
     const roomId = page.url().split('/room/')[1];
 
     await page.getByRole('button', { name: '3', exact: true }).click();
     await expect(page.getByText('Vote Submitted')).toBeVisible();
 
-    // A raw socket connection that never calls joinRoom for this room — i.e. `user` will be
-    // undefined server-side. It should be rejected, not silently treated as authorized.
+    // A raw socket connection that never calls joinRoom for this room
     const stranger = ioClient(baseURL!);
     await new Promise<void>((resolve) => stranger.on('connect', () => resolve()));
+
+    // Attempt unauthorized vote forgery
+    const voteResponse = await new Promise<{ success: boolean; error?: string }>((resolve) => {
+      stranger.emit('vote', { roomId, userId: 'some-victim-id', vote: 21 }, resolve);
+    });
+    expect(voteResponse.success).toBe(false);
+    expect(voteResponse.error).toMatch(/Unauthorized/);
 
     const resetResponse = await new Promise<{ success: boolean; error?: string }>((resolve) => {
       stranger.emit('resetVotes', { roomId }, resolve);

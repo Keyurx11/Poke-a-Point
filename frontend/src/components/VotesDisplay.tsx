@@ -90,12 +90,13 @@ const VotesDisplay: React.FC<VotesDisplayProps> = ({
   };
 
   const getConsensusDetails = () => {
-    const castVotes = users
+    const allUsersVoted = users.length > 0 && users.every((u) => votes[u.id] !== null && votes[u.id] !== undefined);
+    const validVotes = users
       .map((user) => votes[user.id])
       .filter((val): val is number | string => val !== null && val !== undefined && val !== '?');
 
-    if (castVotes.length > 0 && castVotes.every((val) => val === castVotes[0])) {
-      return { isConsensus: true, consensusValue: castVotes[0] };
+    if (allUsersVoted && validVotes.length > 0 && validVotes.every((val) => val === validVotes[0])) {
+      return { isConsensus: true, consensusValue: validVotes[0] };
     }
     return { isConsensus: false, consensusValue: null };
   };

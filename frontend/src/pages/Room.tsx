@@ -118,9 +118,11 @@ const Room: React.FC = () => {
 
   const handleVote = (vote: number | string) => {
     if (roomId) {
-      socket.emit('vote', { roomId, userId, vote }, ({ success }: { success: boolean }) => {
+      socket.emit('vote', { roomId, userId, vote }, ({ success, error }: { success: boolean; error?: string }) => {
         if (success) {
           setSelectedVote(vote);
+        } else if (error) {
+          alert(error);
         }
       });
     }
@@ -141,11 +143,11 @@ const Room: React.FC = () => {
 
   const handleResetMyVote = () => {
     if (roomId) {
-      socket.emit('vote', { roomId, userId, vote: null }, ({ success }: { success: boolean }) => {
+      socket.emit('vote', { roomId, userId, vote: null }, ({ success, error }: { success: boolean; error?: string }) => {
         if (success) {
           setSelectedVote(null);
         } else {
-          alert('Failed to reset your vote');
+          alert(error || 'Failed to reset your vote');
         }
       });
     }
@@ -154,7 +156,11 @@ const Room: React.FC = () => {
   const handleToggleVotes = () => {
     if (isCreator && roomId) {
       const newShowVotes = !showVotes;
-      socket.emit('toggleVotes', { roomId, showVotes: newShowVotes });
+      socket.emit('toggleVotes', { roomId, showVotes: newShowVotes }, (response?: { success: boolean; error?: string }) => {
+        if (response && !response.success && response.error) {
+          alert(response.error);
+        }
+      });
     }
   };
 
