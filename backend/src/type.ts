@@ -12,4 +12,5 @@ export interface Room {
   votes: { [userId: string]: number | string | null };
   showVotes: boolean;
   votingOptions: (number | string)[];
+  autoReveal: boolean;
 }
