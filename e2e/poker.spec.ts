@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { io as ioClient } from '../frontend/node_modules/socket.io-client';
 
 test.describe('Poke-a-Point Planning Poker E2E Suite', () => {
   test('Full multi-user poker workflow with real-time sync, host privileges, and refresh persistence', async ({ browser }) => {
@@ -60,15 +61,18 @@ test.describe('Poke-a-Point Planning Poker E2E Suite', () => {
     await alicePage.click('button:has-text("Show Points")');
 
     // Both should see average calculation ( (5+8)/2 = 6.5 )
-    await expect(alicePage.getByText('Average: 6.5 Story Points')).toBeVisible();
-    await expect(bobPage.getByText('Average: 6.5 Story Points')).toBeVisible();
+    await expect(alicePage.getByText('Average Story Points')).toBeVisible();
+    await expect(alicePage.getByTestId('vote-stats-value')).toHaveText('6.5');
+    await expect(bobPage.getByText('Average Story Points')).toBeVisible();
+    await expect(bobPage.getByTestId('vote-stats-value')).toHaveText('6.5');
 
     // 6. Host Resets Votes
     await alicePage.click('button:has-text("Reset All Votes")');
 
-    // Average should disappear and cards reset
-    await expect(alicePage.getByText('Average: 6.5 Story Points')).not.toBeVisible();
-    await expect(bobPage.getByText('Average: 6.5 Story Points')).not.toBeVisible();
+    // Average should disappear and the voting card panel should return
+    await expect(alicePage.getByTestId('vote-stats-value')).not.toBeVisible();
+    await expect(bobPage.getByTestId('vote-stats-value')).not.toBeVisible();
+    await expect(alicePage.getByText('Cast Your Vote')).toBeVisible();
 
     // 7. Page Refresh & Host Retention
     await alicePage.reload();
@@ -98,6 +102,110 @@ test.describe('Poke-a-Point Planning Poker E2E Suite', () => {
     await page.getByRole('button', { name: 'M', exact: true }).click();
     await page.click('button:has-text("Show Points")');
 
-    await expect(page.getByText('Most Popular Vote: M')).toBeVisible();
+    await expect(page.getByText('Most Popular Vote')).toBeVisible();
+    await expect(page.getByTestId('vote-stats-value')).toHaveText('M');
+  });
+
+  test('Auto-reveal and 100% Consensus banner workflow', async ({ page }) => {
+    await page.goto('/create');
+    await page.fill('label:has-text("Room Name") + div input, input[label="Room Name"]', 'Consensus Room');
+    await page.fill('label:has-text("Your Name") + div input, input[label="Your Name"]', 'Dave');
+
+    // Check Auto-Reveal
+    await page.click('label:has-text("Auto-reveal points when all team members vote")');
+
+    await page.click('button[type="submit"]');
+
+    await expect(page).toHaveURL(/\/room\/.+/);
+    await expect(page.getByText('Consensus Room')).toBeVisible();
+
+    // Vote 8
+    await page.getByRole('button', { name: '8', exact: true }).click();
+
+    // Auto-reveal should trigger and display consensus banner automatically
+    await expect(page.getByText('100% Consensus Reached! Team agreed on 8')).toBeVisible({ timeout: 5000 });
+  });
+
+  test('Clicking the ROOM CODE chip copies the invite link to the clipboard', async ({ browser }) => {
+    const context = await browser.newContext({ permissions: ['clipboard-read', 'clipboard-write'] });
+    const page = await context.newPage();
+
+    await page.goto('/create');
+    await page.fill('label:has-text("Room Name") + div input, input[label="Room Name"]', 'Clipboard Room');
+    await page.fill('label:has-text("Your Name") + div input, input[label="Your Name"]', 'Frank');
+    await page.click('button[type="submit"]');
+    await expect(page).toHaveURL(/\/room\/.+/);
+
+    const roomId = page.url().split('/room/')[1];
+
+    await page.getByTestId('room-code-chip').click();
+    await expect(page.getByText('Room invite link copied to clipboard!')).toBeVisible();
+
+    const clipboardText = await page.evaluate(() => navigator.clipboard.readText());
+    expect(clipboardText).toBe(`${new URL(page.url()).origin}/join?roomId=${roomId}`);
+
+    await context.close();
+  });
+
+  test('Selected vote card stays highlighted after a refresh while points are hidden', async ({ page }) => {
+    await page.goto('/create');
+    await page.fill('label:has-text("Room Name") + div input, input[label="Room Name"]', 'Refresh Room');
+    await page.fill('label:has-text("Your Name") + div input, input[label="Your Name"]', 'Grace');
+    await page.click('button[type="submit"]');
+    await expect(page).toHaveURL(/\/room\/.+/);
+
+    const voteButton = page.getByRole('button', { name: '13', exact: true });
+    await voteButton.click();
+    await expect(voteButton).toHaveClass(/MuiButton-contained/);
+
+    // Points are still hidden at this point — refreshing must not lose the visual selection
+    await expect(page.getByText('Voting Results (Hidden)')).toBeVisible();
+    await page.reload();
+    await expect(page.getByText('Team Members')).toBeVisible();
+
+    const voteButtonAfterReload = page.getByRole('button', { name: '13', exact: true });
+    await expect(voteButtonAfterReload).toHaveClass(/MuiButton-contained/);
+  });
+
+  test('A socket that never joined the room cannot reset votes, toggle reveal, or toggle auto-reveal', async ({ page, baseURL }) => {
+    // Set up a real room with a real host, via the UI, so there is something to attack.
+    await page.goto('/create');
+    await page.fill('label:has-text("Room Name") + div input, input[label="Room Name"]', 'Auth Boundary Room');
+    await page.fill('label:has-text("Your Name") + div input, input[label="Your Name"]', 'Hank');
+    await page.click('button[type="submit"]');
+    await expect(page).toHaveURL(/\/room\/.+/);
+    const roomId = page.url().split('/room/')[1];
+
+    await page.getByRole('button', { name: '3', exact: true }).click();
+    await expect(page.getByText('Vote Submitted')).toBeVisible();
+
+    // A raw socket connection that never calls joinRoom for this room — i.e. `user` will be
+    // undefined server-side. It should be rejected, not silently treated as authorized.
+    const stranger = ioClient(baseURL!);
+    await new Promise<void>((resolve) => stranger.on('connect', () => resolve()));
+
+    const resetResponse = await new Promise<{ success: boolean; error?: string }>((resolve) => {
+      stranger.emit('resetVotes', { roomId }, resolve);
+    });
+    expect(resetResponse.success).toBe(false);
+    expect(resetResponse.error).toMatch(/Unauthorized/);
+
+    const toggleResponse = await new Promise<{ success: boolean; error?: string }>((resolve) => {
+      stranger.emit('toggleVotes', { roomId, showVotes: true }, resolve);
+    });
+    expect(toggleResponse.success).toBe(false);
+    expect(toggleResponse.error).toMatch(/Unauthorized/);
+
+    const autoRevealResponse = await new Promise<{ success: boolean; error?: string }>((resolve) => {
+      stranger.emit('toggleAutoReveal', { roomId, autoReveal: true }, resolve);
+    });
+    expect(autoRevealResponse.success).toBe(false);
+    expect(autoRevealResponse.error).toMatch(/Unauthorized/);
+
+    // Confirm the attack had no effect: Hank's vote is still there and still hidden.
+    await expect(page.getByText('Vote Submitted')).toBeVisible();
+    await expect(page.getByText('Voting Results (Hidden)')).toBeVisible();
+
+    stranger.disconnect();
   });
 });

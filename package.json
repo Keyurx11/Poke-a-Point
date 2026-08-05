@@ -12,6 +12,7 @@
     "concurrently": "^7.6.0"
   },
   "devDependencies": {
-    "@playwright/test": "^1.62.1"
+    "@playwright/test": "^1.62.1",
+    "nodemon": "^3.1.14"
   }
 }
