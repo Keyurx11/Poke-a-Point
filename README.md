@@ -4,6 +4,8 @@
 
 Poke-a-Point is an Agile estimation tool built with React, TypeScript, and Vite. It allows teams to conduct estimation sessions using planning poker, enhancing collaboration and improving estimation accuracy.
 
+![Poke-a-Point Interface](assets/poker-tool-v2.png)
+
 ## Technologies Used
 
 - **Frontend:**
