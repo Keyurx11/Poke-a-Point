@@ -7,11 +7,12 @@ import BarChartIcon from '@mui/icons-material/BarChart';
 import VotingSection from './VotingSection';
 
 interface VotesDisplayProps {
-  users: { id: string; name: string }[];
+  users: { id: string; name: string; role?: 'participant' | 'operator' }[];
   votes: { [key: string]: number | string | null };
   showVotes: boolean;
   votingOptions: (number | string)[];
   isCreator: boolean;
+  isOperator?: boolean;
   handleResetVotes: () => void;
   handleToggleVotes: () => void;
   selectedVote: number | string | null;
@@ -25,14 +26,18 @@ const VotesDisplay: React.FC<VotesDisplayProps> = ({
   showVotes,
   votingOptions,
   isCreator,
+  isOperator,
   handleResetVotes,
   handleToggleVotes,
   selectedVote,
   handleVote,
   handleResetMyVote,
 }) => {
+  // Filter out operator/observer users from all statistical calculations
+  const voters = users.filter((u) => u.role !== 'operator');
+  const observerCount = users.length - voters.length;
   const getAverageDetails = () => {
-    const validVotes = users
+    const validVotes = voters
       .map((user) => votes[user.id])
       .filter((val): val is number | string => val !== null && val !== undefined && val !== '?');
 
@@ -90,12 +95,12 @@ const VotesDisplay: React.FC<VotesDisplayProps> = ({
   };
 
   const getConsensusDetails = () => {
-    const allUsersVoted = users.length > 0 && users.every((u) => votes[u.id] !== null && votes[u.id] !== undefined);
-    const validVotes = users
+    const allVotersVoted = voters.length > 0 && voters.every((u) => votes[u.id] !== null && votes[u.id] !== undefined);
+    const validVotes = voters
       .map((user) => votes[user.id])
       .filter((val): val is number | string => val !== null && val !== undefined && val !== '?');
 
-    if (allUsersVoted && validVotes.length > 0 && validVotes.every((val) => val === validVotes[0])) {
+    if (allVotersVoted && validVotes.length > 0 && validVotes.every((val) => val === validVotes[0])) {
       return { isConsensus: true, consensusValue: validVotes[0] };
     }
     return { isConsensus: false, consensusValue: null };
@@ -109,7 +114,7 @@ const VotesDisplay: React.FC<VotesDisplayProps> = ({
       distributionMap[String(option)] = { count: 0, voters: [] };
     });
 
-    users.forEach((user) => {
+    voters.forEach((user) => {
       const voteVal = votes[user.id];
       if (voteVal !== null && voteVal !== undefined) {
         const key = String(voteVal);
@@ -121,7 +126,7 @@ const VotesDisplay: React.FC<VotesDisplayProps> = ({
       }
     });
 
-    const totalVotes = users.filter((u) => votes[u.id] !== undefined && votes[u.id] !== null).length;
+    const totalVotes = voters.filter((u) => votes[u.id] !== undefined && votes[u.id] !== null).length;
     const maxCount = Math.max(...Object.values(distributionMap).map((d) => d.count), 1);
 
     return {
@@ -168,7 +173,7 @@ const VotesDisplay: React.FC<VotesDisplayProps> = ({
             {showVotes ? 'Session Results' : 'Voting Results (Hidden)'}
           </Typography>
           <Typography variant="body2" color="textSecondary">
-            {users.length} {users.length === 1 ? 'Participant' : 'Participants'}
+            {voters.length} {voters.length === 1 ? 'Voter' : 'Voters'}{observerCount > 0 ? ` · ${observerCount} ${observerCount === 1 ? 'Observer' : 'Observers'}` : ''}
           </Typography>
         </Box>
 
@@ -393,6 +398,7 @@ const VotesDisplay: React.FC<VotesDisplayProps> = ({
               selectedVote={selectedVote}
               handleVote={handleVote}
               handleResetMyVote={handleResetMyVote}
+              isOperator={isOperator}
             />
           )}
         </Grid>

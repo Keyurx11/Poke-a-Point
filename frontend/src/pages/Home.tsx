@@ -1,7 +1,7 @@
 // src/pages/Home.tsx
 
 import React from 'react';
-import { Container, Typography, Button, Stack, Box, Paper, Grid } from '@mui/material';
+import { Container, Typography, Button, Stack, Box, Paper, Grid, Link } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
 import LoginIcon from '@mui/icons-material/Login';
@@ -9,6 +9,7 @@ import SpeedIcon from '@mui/icons-material/Speed';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import GroupsIcon from '@mui/icons-material/Groups';
 import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
+import GitHubIcon from '@mui/icons-material/GitHub';
 
 const Home: React.FC = () => {
   const navigate = useNavigate();
@@ -142,6 +143,29 @@ const Home: React.FC = () => {
           </Paper>
         </Grid>
       </Grid>
+
+      <Box textAlign="center" sx={{ mt: 5, opacity: 0.85 }}>
+        <Typography
+          variant="body2"
+          color="textSecondary"
+          display="flex"
+          alignItems="center"
+          justifyContent="center"
+          gap={0.75}
+        >
+          <GitHubIcon sx={{ fontSize: 18 }} />
+          Poke-a-Point is open source on{' '}
+          <Link
+            href="https://github.com/keyurx11/Poke-a-Point"
+            target="_blank"
+            rel="noopener noreferrer"
+            underline="hover"
+            sx={{ fontWeight: 'bold', color: 'primary.main' }}
+          >
+            GitHub
+          </Link>
+        </Typography>
+      </Box>
     </Container>
   );
 };

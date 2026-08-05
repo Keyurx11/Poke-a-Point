@@ -109,7 +109,7 @@ io.on('connection', (socket: Socket) => {
         id: roomId,
         name: roomName,
         creatorId: actualUserId,
-        users: [{ id: actualUserId, name: userName, socketId: socket.id }],
+        users: [{ id: actualUserId, name: userName, socketId: socket.id, role: 'participant' }],
         votes: {},
         showVotes: false,
         votingOptions: (votingOptions && votingOptions.length > 0) ? votingOptions : DEFAULT_VOTING_OPTIONS,
@@ -135,7 +135,7 @@ io.on('connection', (socket: Socket) => {
         existingUser.socketId = socket.id;
         existingUser.name = userName;
       } else {
-        room.users.push({ id: userId, name: userName, socketId: socket.id });
+        room.users.push({ id: userId, name: userName, socketId: socket.id, role: 'participant' });
       }
       socket.join(roomId);
       callback({ success: true, room: getPublicRoom(room, userId) });
@@ -162,6 +162,10 @@ io.on('connection', (socket: Socket) => {
           return callback({ success: false, error: 'Unauthorized: Cannot vote on behalf of another user or without joining room' });
         }
 
+        if (user.role === 'operator') {
+          return callback({ success: false, error: 'Operators cannot vote. Switch to Participant mode to cast a vote.' });
+        }
+
         if (vote === null) {
           delete room.votes[userId];
         } else {
@@ -170,9 +174,10 @@ io.on('connection', (socket: Socket) => {
 
         // Auto-reveal check
         if (room.autoReveal && !room.showVotes) {
+          const voters = room.users.filter((u) => u.role !== 'operator');
           const allVoted =
-            room.users.length > 0 &&
-            room.users.every(
+            voters.length > 0 &&
+            voters.every(
               (u) => room.votes[u.id] !== null && room.votes[u.id] !== undefined
             );
           if (allVoted) {
@@ -254,6 +259,37 @@ io.on('connection', (socket: Socket) => {
 
         room.autoReveal = autoReveal;
         broadcastRoomData(room);
+        if (callback) callback({ success: true });
+      } else {
+        if (callback) callback({ success: false, error: 'Room not found' });
+      }
+    }
+  );
+
+  // Toggle Role (Participant <-> Operator) — any user can switch their own role
+  socket.on(
+    'toggleRole',
+    (
+      { roomId, role }: { roomId: string; role: 'participant' | 'operator' },
+      callback?: (response: { success: boolean; error?: string }) => void
+    ) => {
+      const room = rooms[roomId];
+      if (room) {
+        const user = getUserBySocketId(room, socket.id);
+        if (!user) {
+          if (callback) callback({ success: false, error: 'You must join the room first' });
+          return;
+        }
+
+        user.role = role;
+
+        // Clear any existing vote when switching to operator
+        if (role === 'operator') {
+          delete room.votes[user.id];
+        }
+
+        broadcastRoomData(room);
+        broadcastVotesUpdate(room);
         if (callback) callback({ success: true });
       } else {
         if (callback) callback({ success: false, error: 'Room not found' });

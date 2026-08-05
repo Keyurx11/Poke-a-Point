@@ -24,10 +24,12 @@ Poke-a-Point is an Agile estimation tool built with React, TypeScript, and Vite.
 
 - Create and join estimation rooms.
 - Real-time updates with Socket.IO.
-- Auto-fill Room ID when joining via invite link.
+- **Observer / Voter Role Toggle:** Switch between active voter and observer mode seamlessly. Observers are automatically excluded from consensus calculations and auto-reveal thresholds.
+- **One-Click Invite Link:** Clickable invite link pill in the room header for instant team sharing.
+- **Consensus & Auto-Reveal:** Automatic revealing when all voters have cast their votes, with statistical averages, consensus indicators, and distribution breakdowns.
 - Vote anonymously and reveal votes when ready.
 - Reset votes and toggle vote visibility.
-- Responsive design with Material UI components.
+- Responsive dark-mode interface built with Material UI components.
 
 ## Prerequisites
 

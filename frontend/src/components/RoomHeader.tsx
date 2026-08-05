@@ -1,7 +1,7 @@
 // src/components/RoomHeader.tsx
 
 import React, { useState } from 'react';
-import { Paper, Box, Typography, Chip, Button, Snackbar, Alert, Tooltip } from '@mui/material';
+import { Paper, Box, Typography, Chip, Button, Snackbar, Alert, Tooltip, Switch } from '@mui/material';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 
 interface RoomHeaderProps {
@@ -9,9 +9,11 @@ interface RoomHeaderProps {
   roomName: string;
   userName: string;
   isCreator?: boolean;
+  isOperator?: boolean;
+  handleToggleRole?: () => void;
 }
 
-const RoomHeader: React.FC<RoomHeaderProps> = ({ roomId, roomName, userName, isCreator }) => {
+const RoomHeader: React.FC<RoomHeaderProps> = ({ roomId, roomName, userName, isCreator, isOperator, handleToggleRole }) => {
   const [copied, setCopied] = useState(false);
   const inviteUrl = `${window.location.origin}/join?roomId=${roomId}`;
 
@@ -45,20 +47,21 @@ const RoomHeader: React.FC<RoomHeaderProps> = ({ roomId, roomName, userName, isC
         </Typography>
         {isCreator && (
           <Chip
-            label="Session Host"
+            label="H"
             color="primary"
             size="small"
-            sx={{ fontWeight: 'bold', height: 20, fontSize: '0.675rem', backgroundColor: '#3B82F6' }}
+            sx={{ fontWeight: 'bold', height: 20, fontSize: '0.675rem', backgroundColor: '#3B82F6', minWidth: 20, px: 0.5 }}
           />
         )}
       </Box>
 
-      {/* Exact Center: ROOM CODE */}
+      {/* Center: Interactive Room Code + Copy Pill */}
       <Box display="flex" justifyContent="center" flex={1}>
-        <Tooltip title="Click to copy room link" arrow>
+        <Tooltip title="Click to copy invite link" arrow>
           <Chip
             data-testid="room-code-chip"
-            label={`ROOM CODE: ${roomId}`}
+            icon={<ContentCopyIcon sx={{ fontSize: '0.85rem !important', color: '#60A5FA !important' }} />}
+            label={`Invite Link: ${roomId}`}
             variant="outlined"
             onClick={copyUrl}
             sx={{
@@ -68,20 +71,25 @@ const RoomHeader: React.FC<RoomHeaderProps> = ({ roomId, roomName, userName, isC
               borderColor: 'rgba(96, 165, 250, 0.4)',
               backgroundColor: 'rgba(30, 41, 59, 0.7)',
               fontSize: '0.8rem',
-              height: 26,
-              px: 0.5,
+              height: 28,
+              px: 1,
               cursor: 'pointer',
-              '&:hover': { backgroundColor: 'rgba(59, 130, 246, 0.25)' },
+              transition: 'all 0.2s ease',
+              '&:hover': {
+                backgroundColor: 'rgba(59, 130, 246, 0.25)',
+                borderColor: '#60A5FA',
+                transform: 'scale(1.02)',
+              },
             }}
           />
         </Tooltip>
       </Box>
 
-      {/* Right side: Logged in user + Copy Link Button */}
+      {/* Right side: Logged in user & Observer toggle */}
       <Box
         display="flex"
         alignItems="center"
-        gap={1.25}
+        gap={1.5}
         flexWrap="wrap"
         flex={1}
         justifyContent={{ xs: 'center', md: 'flex-end' }}
@@ -90,25 +98,27 @@ const RoomHeader: React.FC<RoomHeaderProps> = ({ roomId, roomName, userName, isC
           Logged in as <strong style={{ color: '#34D399' }}>{userName}</strong>
         </Typography>
 
-        <Button
-          variant="contained"
-          size="small"
-          startIcon={<ContentCopyIcon sx={{ fontSize: '0.8rem !important' }} />}
-          onClick={copyUrl}
-          sx={{
-            py: 0.3,
-            px: 1.25,
-            fontWeight: 'bold',
-            fontSize: '0.75rem',
-            borderRadius: 1.25,
-            backgroundColor: '#2563EB',
-            '&:hover': { backgroundColor: '#1D4ED8' },
-            textTransform: 'none',
-            whiteSpace: 'nowrap',
-          }}
-        >
-          Copy Room Link
-        </Button>
+        <Box display="flex" alignItems="center" gap={0.5}>
+          <Typography variant="caption" sx={{ color: isOperator ? '#FBBF24' : 'rgba(255,255,255,0.6)', fontWeight: 'bold', fontSize: '0.725rem', userSelect: 'none' }}>
+            Observer
+          </Typography>
+          <Switch
+            checked={!!isOperator}
+            onChange={handleToggleRole}
+            size="small"
+            sx={{
+              '& .MuiSwitch-switchBase.Mui-checked': {
+                color: '#FBBF24',
+              },
+              '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': {
+                backgroundColor: '#FBBF24',
+              },
+              '& .MuiSwitch-track': {
+                backgroundColor: 'rgba(255,255,255,0.3)',
+              },
+            }}
+          />
+        </Box>
       </Box>
 
       <Snackbar

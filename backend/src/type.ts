@@ -2,6 +2,7 @@ export interface User {
   id: string; // persistent userId
   name: string;
   socketId: string;
+  role: 'participant' | 'operator';
 }
 
 export interface Room {

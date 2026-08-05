@@ -13,6 +13,7 @@ interface User {
   id: string;
   name: string;
   socketId: string;
+  role: 'participant' | 'operator';
 }
 
 interface RoomData {
@@ -23,6 +24,7 @@ interface RoomData {
   votes: { [key: string]: number | string | null };
   showVotes: boolean;
   votingOptions?: (number | string)[];
+  autoReveal?: boolean;
 }
 
 const DEFAULT_VOTING_OPTIONS = [1, 2, 3, 5, 8, 13, 21, '?'];
@@ -42,6 +44,7 @@ const Room: React.FC = () => {
   const [selectedVote, setSelectedVote] = useState<number | string | null>(null);
   const [showVotes, setShowVotes] = useState(false);
   const [isCreator, setIsCreator] = useState(false);
+  const [isOperator, setIsOperator] = useState(false);
   const [votingOptions, setVotingOptions] = useState<(number | string)[]>(DEFAULT_VOTING_OPTIONS);
 
   useEffect(() => {
@@ -75,6 +78,9 @@ const Room: React.FC = () => {
         setCreatorId(room.creatorId || '');
         setShowVotes(room.showVotes);
         setIsCreator(room.creatorId === userId);
+        // Track own operator status
+        const me = room.users.find((u: User) => u.id === userId);
+        setIsOperator(me?.role === 'operator');
         if (room.votingOptions && room.votingOptions.length > 0) {
           setVotingOptions(room.votingOptions);
         }
@@ -117,7 +123,7 @@ const Room: React.FC = () => {
   }, [roomId, userName, userId, socket, navigate]);
 
   const handleVote = (vote: number | string) => {
-    if (roomId) {
+    if (roomId && !isOperator) {
       socket.emit('vote', { roomId, userId, vote }, ({ success, error }: { success: boolean; error?: string }) => {
         if (success) {
           setSelectedVote(vote);
@@ -164,6 +170,17 @@ const Room: React.FC = () => {
     }
   };
 
+  const handleToggleRole = () => {
+    if (roomId) {
+      const newRole = isOperator ? 'participant' : 'operator';
+      socket.emit('toggleRole', { roomId, role: newRole }, (response?: { success: boolean; error?: string }) => {
+        if (response && !response.success && response.error) {
+          alert(response.error);
+        }
+      });
+    }
+  };
+
   if (!roomId || !userName) {
     return (
       <Box display="flex" justifyContent="center" alignItems="center" minHeight="50vh">
@@ -184,7 +201,7 @@ const Room: React.FC = () => {
           boxShadow: '0 4px 16px rgba(0,0,0,0.04)',
         }}
       >
-        <RoomHeader roomId={roomId} roomName={roomName} userName={userName} isCreator={isCreator} />
+        <RoomHeader roomId={roomId} roomName={roomName} userName={userName} isCreator={isCreator} isOperator={isOperator} handleToggleRole={handleToggleRole} />
 
         <Box sx={{ mb: 1.5 }}>
           <ParticipantsList users={users} votes={votes} showVotes={showVotes} creatorId={creatorId} />
@@ -196,6 +213,7 @@ const Room: React.FC = () => {
           showVotes={showVotes}
           votingOptions={votingOptions}
           isCreator={isCreator}
+          isOperator={isOperator}
           handleResetVotes={handleResetVotes}
           handleToggleVotes={handleToggleVotes}
           selectedVote={selectedVote}

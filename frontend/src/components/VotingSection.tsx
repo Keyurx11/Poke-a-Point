@@ -2,12 +2,14 @@
 
 import React from 'react';
 import { Grid, Button, Paper, Typography, Box } from '@mui/material';
+import VisibilityIcon from '@mui/icons-material/Visibility';
 
 interface VotingSectionProps {
   votingOptions: (number | string)[];
   selectedVote: number | string | null;
   handleVote: (vote: number | string) => void;
   handleResetMyVote: () => void;
+  isOperator?: boolean;
 }
 
 const VotingSection: React.FC<VotingSectionProps> = ({
@@ -15,6 +17,7 @@ const VotingSection: React.FC<VotingSectionProps> = ({
   selectedVote,
   handleVote,
   handleResetMyVote,
+  isOperator,
 }) => (
   <Paper
     elevation={1}
@@ -29,7 +32,24 @@ const VotingSection: React.FC<VotingSectionProps> = ({
       justifyContent: 'space-between',
     }}
   >
-    <Box>
+    {isOperator ? (
+      <Box
+        display="flex"
+        flexDirection="column"
+        alignItems="center"
+        justifyContent="center"
+        sx={{ py: 4, gap: 1.5 }}
+      >
+        <VisibilityIcon sx={{ fontSize: 40, color: '#FBBF24', opacity: 0.8 }} />
+        <Typography variant="subtitle1" fontWeight="bold" color="textPrimary">
+          Observer Mode
+        </Typography>
+        <Typography variant="body2" color="textSecondary" textAlign="center">
+          You’re spectating this round. Switch to <strong>Voter</strong> mode to cast a vote.
+        </Typography>
+      </Box>
+    ) : (
+      <>
       <Typography variant="subtitle1" fontWeight="bold" color="textPrimary">
         Cast Your Vote
       </Typography>
@@ -72,7 +92,6 @@ const VotingSection: React.FC<VotingSectionProps> = ({
           );
         })}
       </Grid>
-    </Box>
 
     <Box mt={3} textAlign="right">
       <Button
@@ -89,6 +108,8 @@ const VotingSection: React.FC<VotingSectionProps> = ({
         Clear My Selection
       </Button>
     </Box>
+      </>
+    )}
   </Paper>
 );
 
