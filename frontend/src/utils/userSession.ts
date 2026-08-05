@@ -1,7 +1,7 @@
 // src/utils/userSession.ts
 
 export const getUserId = (): string => {
-  let userId = localStorage.getItem('userId') || sessionStorage.getItem('userId');
+  let userId = localStorage.getItem('userId');
   if (!userId) {
     userId = (typeof window !== 'undefined' && window.crypto && typeof window.crypto.randomUUID === 'function')
       ? window.crypto.randomUUID().replace(/-/g, '').substring(0, 12)
