@@ -7,7 +7,7 @@ import HourglassEmptyIcon from '@mui/icons-material/HourglassEmpty';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 
 interface ParticipantsListProps {
-  users: { id: string; name: string; role?: 'participant' | 'operator' }[];
+  users: { id: string; name: string; role?: 'participant' | 'observer' }[];
   votes?: { [key: string]: number | string | null };
   showVotes?: boolean;
   creatorId?: string;
@@ -42,7 +42,7 @@ const ParticipantsList: React.FC<ParticipantsListProps> = ({ users, votes = {}, 
       {users.map((user, idx) => {
         const hasVoted = votes[user.id] !== undefined && votes[user.id] !== null;
         const isHost = idx === 0 || user.id === creatorId;
-        const isObserver = user.role === 'operator';
+        const isObserver = user.role === 'observer';
         const userVoteVal = votes[user.id];
 
         return (
@@ -66,7 +66,7 @@ const ParticipantsList: React.FC<ParticipantsListProps> = ({ users, votes = {}, 
                     {user.name}
                   </Typography>
                   {isHost && (
-                    <Chip label="H" size="small" sx={{ height: 16, fontSize: '0.6rem', bgcolor: '#FEF3C7', color: '#92400E', fontWeight: 'bold', px: 0.25 }} />
+                    <Chip aria-label="Session Host" label="H" size="small" sx={{ height: 16, fontSize: '0.6rem', bgcolor: '#FEF3C7', color: '#92400E', fontWeight: 'bold', px: 0.25 }} />
                   )}
 
                 </Box>

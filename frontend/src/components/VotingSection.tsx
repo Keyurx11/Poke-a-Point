@@ -9,7 +9,7 @@ interface VotingSectionProps {
   selectedVote: number | string | null;
   handleVote: (vote: number | string) => void;
   handleResetMyVote: () => void;
-  isOperator?: boolean;
+  isObserver?: boolean;
 }
 
 const VotingSection: React.FC<VotingSectionProps> = ({
@@ -17,7 +17,7 @@ const VotingSection: React.FC<VotingSectionProps> = ({
   selectedVote,
   handleVote,
   handleResetMyVote,
-  isOperator,
+  isObserver,
 }) => (
   <Paper
     elevation={1}
@@ -32,7 +32,7 @@ const VotingSection: React.FC<VotingSectionProps> = ({
       justifyContent: 'space-between',
     }}
   >
-    {isOperator ? (
+    {isObserver ? (
       <Box
         display="flex"
         flexDirection="column"

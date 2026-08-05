@@ -13,7 +13,7 @@ interface User {
   id: string;
   name: string;
   socketId: string;
-  role: 'participant' | 'operator';
+  role: 'participant' | 'observer';
 }
 
 interface RoomData {
@@ -44,7 +44,7 @@ const Room: React.FC = () => {
   const [selectedVote, setSelectedVote] = useState<number | string | null>(null);
   const [showVotes, setShowVotes] = useState(false);
   const [isCreator, setIsCreator] = useState(false);
-  const [isOperator, setIsOperator] = useState(false);
+  const [isObserver, setIsObserver] = useState(false);
   const [votingOptions, setVotingOptions] = useState<(number | string)[]>(DEFAULT_VOTING_OPTIONS);
 
   useEffect(() => {
@@ -78,9 +78,9 @@ const Room: React.FC = () => {
         setCreatorId(room.creatorId || '');
         setShowVotes(room.showVotes);
         setIsCreator(room.creatorId === userId);
-        // Track own operator status
+        // Track own observer status
         const me = room.users.find((u: User) => u.id === userId);
-        setIsOperator(me?.role === 'operator');
+        setIsObserver(me?.role === 'observer');
         if (room.votingOptions && room.votingOptions.length > 0) {
           setVotingOptions(room.votingOptions);
         }
@@ -123,7 +123,7 @@ const Room: React.FC = () => {
   }, [roomId, userName, userId, socket, navigate]);
 
   const handleVote = (vote: number | string) => {
-    if (roomId && !isOperator) {
+    if (roomId && !isObserver) {
       socket.emit('vote', { roomId, userId, vote }, ({ success, error }: { success: boolean; error?: string }) => {
         if (success) {
           setSelectedVote(vote);
@@ -172,7 +172,7 @@ const Room: React.FC = () => {
 
   const handleToggleRole = () => {
     if (roomId) {
-      const newRole = isOperator ? 'participant' : 'operator';
+      const newRole = isObserver ? 'participant' : 'observer';
       socket.emit('toggleRole', { roomId, role: newRole }, (response?: { success: boolean; error?: string }) => {
         if (response && !response.success && response.error) {
           alert(response.error);
@@ -201,7 +201,7 @@ const Room: React.FC = () => {
           boxShadow: '0 4px 16px rgba(0,0,0,0.04)',
         }}
       >
-        <RoomHeader roomId={roomId} roomName={roomName} userName={userName} isCreator={isCreator} isOperator={isOperator} handleToggleRole={handleToggleRole} />
+        <RoomHeader roomId={roomId} roomName={roomName} userName={userName} isCreator={isCreator} isObserver={isObserver} handleToggleRole={handleToggleRole} />
 
         <Box sx={{ mb: 1.5 }}>
           <ParticipantsList users={users} votes={votes} showVotes={showVotes} creatorId={creatorId} />
@@ -213,7 +213,7 @@ const Room: React.FC = () => {
           showVotes={showVotes}
           votingOptions={votingOptions}
           isCreator={isCreator}
-          isOperator={isOperator}
+          isObserver={isObserver}
           handleResetVotes={handleResetVotes}
           handleToggleVotes={handleToggleVotes}
           selectedVote={selectedVote}

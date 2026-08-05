@@ -9,11 +9,11 @@ interface RoomHeaderProps {
   roomName: string;
   userName: string;
   isCreator?: boolean;
-  isOperator?: boolean;
+  isObserver?: boolean;
   handleToggleRole?: () => void;
 }
 
-const RoomHeader: React.FC<RoomHeaderProps> = ({ roomId, roomName, userName, isCreator, isOperator, handleToggleRole }) => {
+const RoomHeader: React.FC<RoomHeaderProps> = ({ roomId, roomName, userName, isCreator, isObserver, handleToggleRole }) => {
   const [copied, setCopied] = useState(false);
   const inviteUrl = `${window.location.origin}/join?roomId=${roomId}`;
 
@@ -46,12 +46,16 @@ const RoomHeader: React.FC<RoomHeaderProps> = ({ roomId, roomName, userName, isC
           {roomName || 'Estimation Session'}
         </Typography>
         {isCreator && (
-          <Chip
-            label="H"
-            color="primary"
-            size="small"
-            sx={{ fontWeight: 'bold', height: 20, fontSize: '0.675rem', backgroundColor: '#3B82F6', minWidth: 20, px: 0.5 }}
-          />
+          <Tooltip title="Session Host" arrow>
+            <Chip
+              data-testid="host-badge"
+              aria-label="Session Host"
+              label="H"
+              color="primary"
+              size="small"
+              sx={{ fontWeight: 'bold', height: 20, fontSize: '0.675rem', backgroundColor: '#3B82F6', minWidth: 20, px: 0.5 }}
+            />
+          </Tooltip>
         )}
       </Box>
 
@@ -99,13 +103,14 @@ const RoomHeader: React.FC<RoomHeaderProps> = ({ roomId, roomName, userName, isC
         </Typography>
 
         <Box display="flex" alignItems="center" gap={0.5}>
-          <Typography variant="caption" sx={{ color: isOperator ? '#FBBF24' : 'rgba(255,255,255,0.6)', fontWeight: 'bold', fontSize: '0.725rem', userSelect: 'none' }}>
+          <Typography variant="caption" sx={{ color: isObserver ? '#FBBF24' : 'rgba(255,255,255,0.6)', fontWeight: 'bold', fontSize: '0.725rem', userSelect: 'none' }}>
             Observer
           </Typography>
           <Switch
-            checked={!!isOperator}
+            checked={!!isObserver}
             onChange={handleToggleRole}
             size="small"
+            inputProps={{ 'data-testid': 'observer-toggle' } as React.InputHTMLAttributes<HTMLInputElement>}
             sx={{
               '& .MuiSwitch-switchBase.Mui-checked': {
                 color: '#FBBF24',

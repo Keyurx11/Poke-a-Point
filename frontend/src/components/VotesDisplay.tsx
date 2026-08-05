@@ -7,12 +7,12 @@ import BarChartIcon from '@mui/icons-material/BarChart';
 import VotingSection from './VotingSection';
 
 interface VotesDisplayProps {
-  users: { id: string; name: string; role?: 'participant' | 'operator' }[];
+  users: { id: string; name: string; role?: 'participant' | 'observer' }[];
   votes: { [key: string]: number | string | null };
   showVotes: boolean;
   votingOptions: (number | string)[];
   isCreator: boolean;
-  isOperator?: boolean;
+  isObserver?: boolean;
   handleResetVotes: () => void;
   handleToggleVotes: () => void;
   selectedVote: number | string | null;
@@ -26,15 +26,15 @@ const VotesDisplay: React.FC<VotesDisplayProps> = ({
   showVotes,
   votingOptions,
   isCreator,
-  isOperator,
+  isObserver,
   handleResetVotes,
   handleToggleVotes,
   selectedVote,
   handleVote,
   handleResetMyVote,
 }) => {
-  // Filter out operator/observer users from all statistical calculations
-  const voters = users.filter((u) => u.role !== 'operator');
+  // Filter out observer users from all statistical calculations
+  const voters = users.filter((u) => u.role !== 'observer');
   const observerCount = users.length - voters.length;
   const getAverageDetails = () => {
     const validVotes = voters
@@ -398,7 +398,7 @@ const VotesDisplay: React.FC<VotesDisplayProps> = ({
               selectedVote={selectedVote}
               handleVote={handleVote}
               handleResetMyVote={handleResetMyVote}
-              isOperator={isOperator}
+              isObserver={isObserver}
             />
           )}
         </Grid>
