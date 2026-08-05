@@ -12,3 +12,5 @@ yarn-error.log*
 # Build output
 dist/
 build/
+test-results/
+playwright-report/
