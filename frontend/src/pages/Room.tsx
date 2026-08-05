@@ -2,13 +2,11 @@
 
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Container, Grid, Box, Paper, CircularProgress } from '@mui/material';
+import { Container, Box, Paper, CircularProgress } from '@mui/material';
 import { useSocket } from '../context/SocketContext';
 import RoomHeader from '../components/RoomHeader';
 import ParticipantsList from '../components/ParticipantsList';
-import VotingSection from '../components/VotingSection';
 import VotesDisplay from '../components/VotesDisplay';
-import InviteButton from '../components/InviteButton';
 import { getUserId } from '../utils/userSession';
 
 interface User {
@@ -33,6 +31,7 @@ const Room: React.FC = () => {
   const { roomId } = useParams<{ roomId: string }>();
   const navigate = useNavigate();
   const socket = useSocket();
+  const mainContentRef = React.useRef<HTMLDivElement>(null);
 
   const userId = getUserId();
   const [userName, setUserName] = useState<string>(localStorage.getItem('userName') || '');
@@ -44,6 +43,17 @@ const Room: React.FC = () => {
   const [showVotes, setShowVotes] = useState(false);
   const [isCreator, setIsCreator] = useState(false);
   const [votingOptions, setVotingOptions] = useState<(number | string)[]>(DEFAULT_VOTING_OPTIONS);
+
+  useEffect(() => {
+    if (roomId && userName) {
+      const timer = setTimeout(() => {
+        if (mainContentRef.current) {
+          mainContentRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      }, 150);
+      return () => clearTimeout(timer);
+    }
+  }, [roomId, userName]);
 
   useEffect(() => {
     if (!roomId || !userName) {
@@ -157,47 +167,35 @@ const Room: React.FC = () => {
   }
 
   return (
-    <Container maxWidth="lg" sx={{ my: 4 }}>
+    <Container maxWidth="xl" sx={{ my: 0.5 }}>
       <Paper
-        elevation={4}
+        ref={mainContentRef}
+        elevation={2}
         sx={{
-          p: { xs: 2, sm: 4 },
-          borderRadius: 3,
+          p: { xs: 1.25, sm: 2 },
+          borderRadius: 2.5,
           backgroundColor: '#ffffff',
-          minHeight: '80vh',
-          boxShadow: '0 10px 30px rgba(0,0,0,0.05)',
+          boxShadow: '0 4px 16px rgba(0,0,0,0.04)',
         }}
       >
         <RoomHeader roomId={roomId} roomName={roomName} userName={userName} isCreator={isCreator} />
-        <Box textAlign="center" sx={{ mb: 4 }}>
-          <InviteButton roomId={roomId} />
+
+        <Box sx={{ mb: 1.5 }}>
+          <ParticipantsList users={users} votes={votes} showVotes={showVotes} creatorId={creatorId} />
         </Box>
 
-        <Grid container spacing={3}>
-          <Grid item xs={12} md={5}>
-            <ParticipantsList users={users} votes={votes} showVotes={showVotes} creatorId={creatorId} />
-          </Grid>
-          <Grid item xs={12} md={7}>
-            <VotingSection
-              votingOptions={votingOptions}
-              selectedVote={selectedVote}
-              handleVote={handleVote}
-              handleResetMyVote={handleResetMyVote}
-            />
-          </Grid>
-        </Grid>
-
-        <Box sx={{ mt: 4 }}>
-          <VotesDisplay
-            users={users}
-            votes={votes}
-            showVotes={showVotes}
-            votingOptions={votingOptions}
-            isCreator={isCreator}
-            handleResetVotes={handleResetVotes}
-            handleToggleVotes={handleToggleVotes}
-          />
-        </Box>
+        <VotesDisplay
+          users={users}
+          votes={votes}
+          showVotes={showVotes}
+          votingOptions={votingOptions}
+          isCreator={isCreator}
+          handleResetVotes={handleResetVotes}
+          handleToggleVotes={handleToggleVotes}
+          selectedVote={selectedVote}
+          handleVote={handleVote}
+          handleResetMyVote={handleResetMyVote}
+        />
       </Paper>
     </Container>
   );

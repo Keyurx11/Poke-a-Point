@@ -1,7 +1,7 @@
 // src/pages/CreateRoom.tsx
 
 import React, { useState } from 'react';
-import { Container, TextField, Button, Typography, Box, Paper, MenuItem, FormControl, InputLabel, Select } from '@mui/material';
+import { Container, TextField, Button, Typography, Box, Paper, MenuItem, FormControl, InputLabel, Select, FormControlLabel, Checkbox } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import { useSocket } from '../context/SocketContext';
 import { getUserId } from '../utils/userSession';
@@ -30,6 +30,7 @@ const CreateRoom: React.FC = () => {
   const [userName, setUserName] = useState(localStorage.getItem('userName') || '');
   const [deckType, setDeckType] = useState('fibonacci');
   const [customDeckInput, setCustomDeckInput] = useState('');
+  const [autoReveal, setAutoReveal] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
   const socket = useSocket();
@@ -64,7 +65,7 @@ const CreateRoom: React.FC = () => {
 
     socket.emit(
       'createRoom',
-      { roomName: roomName.trim(), userName: userName.trim(), userId, votingOptions },
+      { roomName: roomName.trim(), userName: userName.trim(), userId, votingOptions, autoReveal },
       ({ roomId, error: createError }: { roomId?: string; userId?: string; error?: string }) => {
         if (roomId) {
           console.log(`Room created with ID: ${roomId}`);
@@ -145,6 +146,18 @@ const CreateRoom: React.FC = () => {
               helperText="Enter estimation values separated by commas"
             />
           )}
+
+          <FormControlLabel
+            control={
+              <Checkbox
+                checked={autoReveal}
+                onChange={(e) => setAutoReveal(e.target.checked)}
+                color="primary"
+              />
+            }
+            label="Auto-reveal points when all team members vote"
+            sx={{ mt: 1, display: 'block' }}
+          />
 
           {error && (
             <Typography color="error" variant="body2" sx={{ mt: 1 }}>

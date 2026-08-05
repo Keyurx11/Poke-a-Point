@@ -1,10 +1,6 @@
 // src/pages/Home.tsx
 
 import React from 'react';
-import { Container, Typography, Button, Stack } from '@mui/material';
-import { useNavigate } from 'react-router-dom';
-
-import React from 'react';
 import { Container, Typography, Button, Stack, Box, Paper, Grid } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
@@ -12,6 +8,7 @@ import LoginIcon from '@mui/icons-material/Login';
 import SpeedIcon from '@mui/icons-material/Speed';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import GroupsIcon from '@mui/icons-material/Groups';
+import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
 
 const Home: React.FC = () => {
   const navigate = useNavigate();
@@ -23,10 +20,14 @@ const Home: React.FC = () => {
         sx={{
           p: { xs: 4, sm: 6 },
           borderRadius: 4,
-          background: 'linear-gradient(135deg, #1E293B 0%, #0F172A 100%)',
+          background: `
+            radial-gradient(circle at -5% -10%, rgba(59, 130, 246, 0.2) 0%, transparent 40%),
+            radial-gradient(circle at 105% 110%, rgba(37, 99, 235, 0.18) 0%, transparent 40%),
+            linear-gradient(135deg, #0B1120 0%, #0F172A 40%, #1E293B 100%)
+          `,
           color: '#ffffff',
           textAlign: 'center',
-          boxShadow: '0 20px 40px rgba(15, 23, 42, 0.15)',
+          boxShadow: '0 20px 40px rgba(15, 23, 42, 0.25)',
         }}
       >
         <Typography
@@ -45,7 +46,7 @@ const Home: React.FC = () => {
         </Typography>
 
         <Typography variant="h6" sx={{ opacity: 0.85, maxW: '600px', mx: 'auto', mb: 5, fontWeight: 400 }}>
-          Real-time collaborative planning poker for agile engineering teams. Fast, anonymous, and accurate story point estimation.
+          Real-time collaborative planning poker for agile engineering teams. Fast, unbiased, and accurate story point estimation.
         </Typography>
 
         <Stack
@@ -97,6 +98,13 @@ const Home: React.FC = () => {
           </Button>
         </Stack>
       </Paper>
+
+      <Box display="flex" alignItems="center" justifyContent="center" gap={1} sx={{ mt: 3, opacity: 0.7 }}>
+        <LockOutlinedIcon sx={{ fontSize: 18, color: 'text.secondary' }} />
+        <Typography variant="body2" color="textSecondary">
+          We don't store any of your data — rooms and votes exist only in memory for the session and disappear when everyone leaves.
+        </Typography>
+      </Box>
 
       {/* Feature Highlight Cards */}
       <Grid container spacing={3} sx={{ mt: 3 }}>

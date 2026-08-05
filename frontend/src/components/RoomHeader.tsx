@@ -1,7 +1,8 @@
 // src/components/RoomHeader.tsx
 
-import React from 'react';
-import { Typography, Box, Chip } from '@mui/material';
+import React, { useState } from 'react';
+import { Paper, Box, Typography, Chip, Button, Snackbar, Alert, Tooltip } from '@mui/material';
+import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 
 interface RoomHeaderProps {
   roomId: string | undefined;
@@ -10,23 +11,118 @@ interface RoomHeaderProps {
   isCreator?: boolean;
 }
 
-const RoomHeader: React.FC<RoomHeaderProps> = ({ roomId, roomName, userName, isCreator }) => (
-  <Box sx={{ mb: 3, textAlign: 'center' }}>
-    <Box display="flex" justifyContent="center" alignItems="center" gap={1.5} mb={1}>
-      <Typography variant="h4" fontWeight="bold" color="textPrimary">
-        {roomName || 'Estimation Session'}
-      </Typography>
-      {isCreator && (
-        <Chip label="Session Host" color="primary" size="small" sx={{ fontWeight: 'bold' }} />
-      )}
-    </Box>
-    <Typography variant="subtitle2" color="textSecondary" sx={{ fontFamily: 'monospace', letterSpacing: 1 }}>
-      ROOM CODE: <strong>{roomId}</strong>
-    </Typography>
-    <Typography variant="body2" color="textSecondary" sx={{ mt: 0.5 }}>
-      Logged in as <strong>{userName}</strong>
-    </Typography>
-  </Box>
-);
+const RoomHeader: React.FC<RoomHeaderProps> = ({ roomId, roomName, userName, isCreator }) => {
+  const [copied, setCopied] = useState(false);
+  const inviteUrl = `${window.location.origin}/join?roomId=${roomId}`;
+
+  const copyUrl = () => {
+    navigator.clipboard.writeText(inviteUrl);
+    setCopied(true);
+  };
+
+  return (
+    <Paper
+      elevation={0}
+      sx={{
+        py: 1,
+        px: 2,
+        mb: 1.5,
+        borderRadius: 2,
+        background: 'linear-gradient(135deg, #1E293B 0%, #0F172A 100%)',
+        color: '#FFFFFF',
+        display: 'flex',
+        flexDirection: { xs: 'column', md: 'row' },
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        gap: 1,
+        boxShadow: '0 2px 10px rgba(15, 23, 42, 0.12)',
+      }}
+    >
+      {/* Left side: Room Name & Host Badge */}
+      <Box display="flex" alignItems="center" gap={1} flexWrap="wrap" flex={1} justifyContent="flex-start">
+        <Typography variant="subtitle1" fontWeight="bold" sx={{ letterSpacing: '-0.01em', color: '#FFFFFF', fontSize: '1rem' }}>
+          {roomName || 'Estimation Session'}
+        </Typography>
+        {isCreator && (
+          <Chip
+            label="Session Host"
+            color="primary"
+            size="small"
+            sx={{ fontWeight: 'bold', height: 20, fontSize: '0.675rem', backgroundColor: '#3B82F6' }}
+          />
+        )}
+      </Box>
+
+      {/* Exact Center: ROOM CODE */}
+      <Box display="flex" justifyContent="center" flex={1}>
+        <Tooltip title="Click to copy room link" arrow>
+          <Chip
+            data-testid="room-code-chip"
+            label={`ROOM CODE: ${roomId}`}
+            variant="outlined"
+            onClick={copyUrl}
+            sx={{
+              fontFamily: 'monospace',
+              fontWeight: 'bold',
+              color: '#60A5FA',
+              borderColor: 'rgba(96, 165, 250, 0.4)',
+              backgroundColor: 'rgba(30, 41, 59, 0.7)',
+              fontSize: '0.8rem',
+              height: 26,
+              px: 0.5,
+              cursor: 'pointer',
+              '&:hover': { backgroundColor: 'rgba(59, 130, 246, 0.25)' },
+            }}
+          />
+        </Tooltip>
+      </Box>
+
+      {/* Right side: Logged in user + Copy Link Button */}
+      <Box
+        display="flex"
+        alignItems="center"
+        gap={1.25}
+        flexWrap="wrap"
+        flex={1}
+        justifyContent={{ xs: 'center', md: 'flex-end' }}
+      >
+        <Typography variant="body2" sx={{ opacity: 0.9, fontSize: '0.8rem' }}>
+          Logged in as <strong style={{ color: '#34D399' }}>{userName}</strong>
+        </Typography>
+
+        <Button
+          variant="contained"
+          size="small"
+          startIcon={<ContentCopyIcon sx={{ fontSize: '0.8rem !important' }} />}
+          onClick={copyUrl}
+          sx={{
+            py: 0.3,
+            px: 1.25,
+            fontWeight: 'bold',
+            fontSize: '0.75rem',
+            borderRadius: 1.25,
+            backgroundColor: '#2563EB',
+            '&:hover': { backgroundColor: '#1D4ED8' },
+            textTransform: 'none',
+            whiteSpace: 'nowrap',
+          }}
+        >
+          Copy Room Link
+        </Button>
+      </Box>
+
+      <Snackbar
+        open={copied}
+        autoHideDuration={3000}
+        onClose={() => setCopied(false)}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        <Alert onClose={() => setCopied(false)} severity="success" sx={{ width: '100%' }}>
+          Room invite link copied to clipboard!
+        </Alert>
+      </Snackbar>
+    </Paper>
+  );
+};
 
 export default RoomHeader;

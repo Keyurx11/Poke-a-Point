@@ -17,10 +17,10 @@ const VotingSection: React.FC<VotingSectionProps> = ({
   handleResetMyVote,
 }) => (
   <Paper
-    elevation={2}
+    elevation={1}
     sx={{
-      padding: 3,
-      borderRadius: 3,
+      padding: 2,
+      borderRadius: 2.5,
       background: '#ffffff',
       border: '1px solid #e2e8f0',
       height: '100%',
@@ -30,14 +30,14 @@ const VotingSection: React.FC<VotingSectionProps> = ({
     }}
   >
     <Box>
-      <Typography variant="h6" fontWeight="bold" color="textPrimary" gutterBottom>
+      <Typography variant="subtitle1" fontWeight="bold" color="textPrimary">
         Cast Your Vote
       </Typography>
-      <Typography variant="body2" color="textSecondary" sx={{ mb: 2.5 }}>
+      <Typography variant="caption" color="textSecondary" sx={{ display: 'block', mb: 1.5 }}>
         Select a card estimation value below
       </Typography>
 
-      <Grid container spacing={1.5}>
+      <Grid container spacing={1}>
         {votingOptions.map((option) => {
           const isSelected = selectedVote === option;
 
@@ -49,10 +49,10 @@ const VotingSection: React.FC<VotingSectionProps> = ({
                 onClick={() => handleVote(option)}
                 sx={{
                   width: '100%',
-                  height: '70px',
-                  fontSize: '1.25rem',
+                  height: '52px',
+                  fontSize: '1.1rem',
                   fontWeight: 'bold',
-                  borderRadius: 2,
+                  borderRadius: 1.75,
                   textTransform: 'none',
                   transition: 'all 0.2s ease-in-out',
                   transform: isSelected ? 'scale(1.05)' : 'none',
@@ -77,10 +77,14 @@ const VotingSection: React.FC<VotingSectionProps> = ({
     <Box mt={3} textAlign="right">
       <Button
         variant="text"
-        color="secondary"
         onClick={handleResetMyVote}
         disabled={selectedVote === null}
-        sx={{ fontWeight: 'bold', textTransform: 'none' }}
+        sx={{
+          fontWeight: 'bold',
+          textTransform: 'none',
+          color: '#64748B',
+          '&:hover': { color: '#334155', backgroundColor: 'rgba(100, 116, 139, 0.08)' },
+        }}
       >
         Clear My Selection
       </Button>
