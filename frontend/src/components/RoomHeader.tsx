@@ -63,6 +63,7 @@ const RoomHeader: React.FC<RoomHeaderProps> = ({
 
   const handleLeaveRoom = () => {
     handleMenuClose();
+    localStorage.removeItem('roomId');
     if (socket && roomId) {
       socket.emit('leaveRoom', { roomId });
     }
@@ -71,6 +72,7 @@ const RoomHeader: React.FC<RoomHeaderProps> = ({
 
   const handleEndSession = () => {
     handleMenuClose();
+    localStorage.removeItem('roomId');
     if (socket && roomId) {
       socket.emit('endSession', { roomId });
     }

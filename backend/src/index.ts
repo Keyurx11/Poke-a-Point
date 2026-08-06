@@ -212,6 +212,7 @@ io.on('connection', (socket: Socket) => {
 
         room.votes = {};
         room.showVotes = false;
+        broadcastRoomData(room);
         broadcastVotesUpdate(room);
         io.to(roomId).emit('toggleVotes', room.showVotes);
         callback({ success: true });

@@ -115,6 +115,7 @@ const Room: React.FC = () => {
       });
 
       socket.on('sessionEnded', () => {
+        localStorage.removeItem('roomId');
         alert('The session host has ended this room.');
         navigate('/');
       });
