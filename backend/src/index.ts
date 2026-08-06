@@ -302,6 +302,61 @@ io.on('connection', (socket: Socket) => {
     }
   );
 
+  // End Session Event (Host Authorized) — closes session and notifies all participants
+  socket.on(
+    'endSession',
+    ({ roomId }: { roomId: string }, callback?: (response: { success: boolean; error?: string }) => void) => {
+      const room = rooms[roomId];
+      if (room) {
+        const user = getUserBySocketId(room, socket.id);
+        if (!user || user.id !== room.creatorId) {
+          if (callback) callback({ success: false, error: 'Unauthorized: Only session host can end the session' });
+          return;
+        }
+
+        io.to(roomId).emit('sessionEnded');
+        delete rooms[roomId];
+        if (callback) callback({ success: true });
+      } else {
+        if (callback) callback({ success: false, error: 'Room not found' });
+      }
+    }
+  );
+
+  // Explicit Leave Room Event
+  socket.on(
+    'leaveRoom',
+    ({ roomId }: { roomId: string }, callback?: (response: { success: boolean; error?: string }) => void) => {
+      const room = rooms[roomId];
+      if (room) {
+        const user = getUserBySocketId(room, socket.id);
+        if (user) {
+          const index = room.users.findIndex((u) => u.id === user.id);
+          if (index !== -1) {
+            room.users.splice(index, 1);
+            delete room.votes[user.id];
+
+            socket.leave(roomId);
+
+            if (room.users.length === 0) {
+              delete rooms[roomId];
+            } else {
+              if (room.creatorId === user.id && room.users.length > 0) {
+                room.creatorId = room.users[0].id;
+              }
+              maybeAutoReveal(room);
+              broadcastRoomData(room);
+              broadcastVotesUpdate(room);
+            }
+          }
+        }
+        if (callback) callback({ success: true });
+      } else {
+        if (callback) callback({ success: false, error: 'Room not found' });
+      }
+    }
+  );
+
   // Handle Disconnect with Grace Period for page refreshes
   socket.on('disconnect', () => {
     console.log(`User disconnected: ${socket.id}`);

@@ -114,10 +114,16 @@ const Room: React.FC = () => {
         setShowVotes(showVotesState);
       });
 
+      socket.on('sessionEnded', () => {
+        alert('The session host has ended this room.');
+        navigate('/');
+      });
+
       return () => {
         socket.off('roomData');
         socket.off('votesUpdate');
         socket.off('toggleVotes');
+        socket.off('sessionEnded');
       };
     }
   }, [roomId, userName, userId, socket, navigate]);
@@ -201,7 +207,15 @@ const Room: React.FC = () => {
           boxShadow: '0 4px 16px rgba(0,0,0,0.04)',
         }}
       >
-        <RoomHeader roomId={roomId} roomName={roomName} userName={userName} isCreator={isCreator} isObserver={isObserver} handleToggleRole={handleToggleRole} />
+        <RoomHeader
+          roomId={roomId}
+          roomName={roomName}
+          userName={userName}
+          isCreator={isCreator}
+          isObserver={isObserver}
+          handleToggleRole={handleToggleRole}
+          handleResetVotes={handleResetVotes}
+        />
 
         <Box sx={{ mb: 1.5 }}>
           <ParticipantsList users={users} votes={votes} showVotes={showVotes} creatorId={creatorId} />
