@@ -66,7 +66,7 @@ const ParticipantsList: React.FC<ParticipantsListProps> = ({ users, votes = {}, 
                     {user.name}
                   </Typography>
                   {isHost && (
-                    <Chip aria-label="Session Host" label="H" size="small" sx={{ height: 16, fontSize: '0.6rem', bgcolor: '#FEF3C7', color: '#92400E', fontWeight: 'bold', px: 0.25 }} />
+                    <Chip data-testid="host-badge" aria-label="Session Host" label="Host" size="small" sx={{ height: 18, fontSize: '0.65rem', bgcolor: '#FEF3C7', color: '#92400E', fontWeight: 'bold', px: 0.5 }} />
                   )}
 
                 </Box>

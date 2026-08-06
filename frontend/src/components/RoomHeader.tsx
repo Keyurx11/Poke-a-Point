@@ -1,8 +1,27 @@
 // src/components/RoomHeader.tsx
 
 import React, { useState } from 'react';
-import { Paper, Box, Typography, Chip, Button, Snackbar, Alert, Tooltip, Switch } from '@mui/material';
+import {
+  Paper,
+  Box,
+  Typography,
+  Chip,
+  Snackbar,
+  Alert,
+  Tooltip,
+  Switch,
+  Avatar,
+  Menu,
+  MenuItem,
+  ListItemIcon,
+  ListItemText,
+} from '@mui/material';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
+import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
+import LogoutIcon from '@mui/icons-material/Logout';
+import HighlightOffIcon from '@mui/icons-material/HighlightOff';
+import { useNavigate } from 'react-router-dom';
+import { useSocket } from '../context/SocketContext';
 
 interface RoomHeaderProps {
   roomId: string | undefined;
@@ -11,15 +30,51 @@ interface RoomHeaderProps {
   isCreator?: boolean;
   isObserver?: boolean;
   handleToggleRole?: () => void;
+  handleResetVotes?: () => void;
 }
 
-const RoomHeader: React.FC<RoomHeaderProps> = ({ roomId, roomName, userName, isCreator, isObserver, handleToggleRole }) => {
+const RoomHeader: React.FC<RoomHeaderProps> = ({
+  roomId,
+  roomName,
+  userName,
+  isCreator,
+  isObserver,
+  handleToggleRole,
+  handleResetVotes,
+}) => {
+  const navigate = useNavigate();
+  const socket = useSocket();
   const [copied, setCopied] = useState(false);
+  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const inviteUrl = `${window.location.origin}/join?roomId=${roomId}`;
 
   const copyUrl = () => {
     navigator.clipboard.writeText(inviteUrl);
     setCopied(true);
+  };
+
+  const handleMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
+    setAnchorEl(event.currentTarget);
+  };
+
+  const handleMenuClose = () => {
+    setAnchorEl(null);
+  };
+
+  const handleLeaveRoom = () => {
+    handleMenuClose();
+    if (socket && roomId) {
+      socket.emit('leaveRoom', { roomId });
+    }
+    navigate('/');
+  };
+
+  const handleEndSession = () => {
+    handleMenuClose();
+    if (socket && roomId) {
+      socket.emit('endSession', { roomId });
+    }
+    navigate('/');
   };
 
   return (
@@ -40,23 +95,11 @@ const RoomHeader: React.FC<RoomHeaderProps> = ({ roomId, roomName, userName, isC
         boxShadow: '0 2px 10px rgba(15, 23, 42, 0.12)',
       }}
     >
-      {/* Left side: Room Name & Host Badge */}
+      {/* Left side: Room Name */}
       <Box display="flex" alignItems="center" gap={1} flexWrap="wrap" flex={1} justifyContent="flex-start">
         <Typography variant="subtitle1" fontWeight="bold" sx={{ letterSpacing: '-0.01em', color: '#FFFFFF', fontSize: '1rem' }}>
           {roomName || 'Estimation Session'}
         </Typography>
-        {isCreator && (
-          <Tooltip title="Session Host" arrow>
-            <Chip
-              data-testid="host-badge"
-              aria-label="Session Host"
-              label="H"
-              color="primary"
-              size="small"
-              sx={{ fontWeight: 'bold', height: 20, fontSize: '0.675rem', backgroundColor: '#3B82F6', minWidth: 20, px: 0.5 }}
-            />
-          </Tooltip>
-        )}
       </Box>
 
       {/* Center: Interactive Room Code + Copy Pill */}
@@ -89,7 +132,7 @@ const RoomHeader: React.FC<RoomHeaderProps> = ({ roomId, roomName, userName, isC
         </Tooltip>
       </Box>
 
-      {/* Right side: Logged in user & Observer toggle */}
+      {/* Right side: Logged in user avatar menu & Observer toggle */}
       <Box
         display="flex"
         alignItems="center"
@@ -98,9 +141,66 @@ const RoomHeader: React.FC<RoomHeaderProps> = ({ roomId, roomName, userName, isC
         flex={1}
         justifyContent={{ xs: 'center', md: 'flex-end' }}
       >
-        <Typography variant="body2" sx={{ opacity: 0.9, fontSize: '0.8rem' }}>
-          Logged in as <strong style={{ color: '#34D399' }}>{userName}</strong>
-        </Typography>
+        <Chip
+          data-testid="user-profile-chip"
+          avatar={
+            <Avatar sx={{ bgcolor: '#3B82F6', color: '#ffffff', fontWeight: 'bold', fontSize: '0.75rem', width: 24, height: 24 }}>
+              {userName ? userName.charAt(0).toUpperCase() : 'U'}
+            </Avatar>
+          }
+          label={userName}
+          onDelete={handleMenuOpen}
+          deleteIcon={<KeyboardArrowDownIcon sx={{ color: 'rgba(255,255,255,0.7) !important', fontSize: '1rem !important' }} />}
+          onClick={handleMenuOpen}
+          sx={{
+            backgroundColor: 'rgba(255, 255, 255, 0.1)',
+            color: '#FFFFFF',
+            fontWeight: 'bold',
+            fontSize: '0.8rem',
+            height: 30,
+            pl: 0.5,
+            pr: 0.5,
+            cursor: 'pointer',
+            border: '1px solid rgba(255, 255, 255, 0.15)',
+            transition: 'all 0.2s ease',
+            '&:hover': {
+              backgroundColor: 'rgba(255, 255, 255, 0.2)',
+              borderColor: 'rgba(255, 255, 255, 0.3)',
+            },
+          }}
+        />
+
+        <Menu
+          anchorEl={anchorEl}
+          open={Boolean(anchorEl)}
+          onClose={handleMenuClose}
+          PaperProps={{
+            elevation: 4,
+            sx: {
+              mt: 1,
+              borderRadius: 2,
+              minWidth: 160,
+              bgcolor: '#1E293B',
+              color: '#FFFFFF',
+              border: '1px solid #334155',
+            },
+          }}
+        >
+          <MenuItem onClick={handleLeaveRoom} sx={{ py: 1, '&:hover': { bgcolor: '#334155' } }}>
+            <ListItemIcon>
+              <LogoutIcon fontSize="small" sx={{ color: '#F87171' }} />
+            </ListItemIcon>
+            <ListItemText primary="Leave Room" primaryTypographyProps={{ fontSize: '0.85rem', fontWeight: 'bold', color: '#F87171' }} />
+          </MenuItem>
+          {isCreator && (
+            <MenuItem onClick={handleEndSession} sx={{ py: 1, '&:hover': { bgcolor: '#334155' } }}>
+              <ListItemIcon>
+                <HighlightOffIcon fontSize="small" sx={{ color: '#FBBF24' }} />
+              </ListItemIcon>
+              <ListItemText primary="End Session" primaryTypographyProps={{ fontSize: '0.85rem', fontWeight: 'bold', color: '#FBBF24' }} />
+            </MenuItem>
+          )}
+        </Menu>
 
         <Box display="flex" alignItems="center" gap={0.5}>
           <Typography variant="caption" sx={{ color: isObserver ? '#FBBF24' : 'rgba(255,255,255,0.6)', fontWeight: 'bold', fontSize: '0.725rem', userSelect: 'none' }}>
