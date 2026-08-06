@@ -146,7 +146,7 @@ const RoomHeader: React.FC<RoomHeaderProps> = ({
         <Chip
           data-testid="user-profile-chip"
           avatar={
-            <Avatar sx={{ bgcolor: '#3B82F6', color: '#ffffff', fontWeight: 'bold', fontSize: '0.75rem', width: 24, height: 24 }}>
+            <Avatar sx={{ bgcolor: '#3B82F6', color: '#1E293B !important', fontWeight: 'bold', fontSize: '0.75rem', width: 24, height: 24 }}>
               {userName ? userName.charAt(0).toUpperCase() : 'U'}
             </Avatar>
           }
