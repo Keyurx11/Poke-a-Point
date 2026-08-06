@@ -28,6 +28,17 @@ async function createRoomHelper(
   await expect(page.getByText(roomName)).toBeVisible();
 }
 
+/**
+ * Shared helper to join an existing room by URL.
+ */
+async function joinRoomHelper(page: Page, roomUrl: string, userName: string) {
+  const roomId = roomUrl.split('/room/')[1];
+  await page.goto(`/join?roomId=${roomId}`);
+  await page.fill('label:has-text("Your Name") + div input, input[label="Your Name"]', userName);
+  await page.click('button[type="submit"], button:has-text("Join Room")');
+  await expect(page).toHaveURL(/\/room\/.+/);
+}
+
 test.describe('Poke-a-Point Planning Poker E2E Suite', () => {
   test('Full multi-user poker workflow with real-time sync, host privileges, and refresh persistence', async ({ browser }) => {
     // Context 1: Alice (Host)
@@ -58,7 +69,7 @@ test.describe('Poke-a-Point Planning Poker E2E Suite', () => {
 
     // Verify Bob is in room and host controls are NOT visible to Bob
     await expect(bobPage).toHaveURL(/\/room\/.+/);
-    await expect(bobPage.getByText('Logged in as Bob')).toBeVisible();
+    await expect(bobPage.getByTestId('user-profile-chip')).toBeVisible();
     await expect(bobPage.getByText('Show Points')).not.toBeVisible();
     await expect(bobPage.getByText('Reset All Votes')).not.toBeVisible();
 
@@ -84,8 +95,8 @@ test.describe('Poke-a-Point Planning Poker E2E Suite', () => {
     await expect(bobPage.getByText('Average Story Points')).toBeVisible();
     await expect(bobPage.getByTestId('vote-stats-value')).toHaveText('6.5');
 
-    // 6. Host Resets Votes
-    await alicePage.click('button:has-text("Reset All Votes")');
+    // 6. Host Resets Votes for Next Round
+    await alicePage.click('button:has-text("Next Round")');
 
     // Average should disappear and the voting card panel should return
     await expect(alicePage.getByTestId('vote-stats-value')).not.toBeVisible();
@@ -96,7 +107,7 @@ test.describe('Poke-a-Point Planning Poker E2E Suite', () => {
     await alicePage.reload();
     await expect(alicePage.getByText('Sprint 100 Planning')).toBeVisible();
     await expect(alicePage.getByTestId('host-badge')).toBeVisible();
-    await expect(alicePage.getByText('Logged in as Alice')).toBeVisible();
+    await expect(alicePage.getByTestId('user-profile-chip')).toBeVisible();
 
     await aliceContext.close();
     await bobContext.close();
@@ -291,5 +302,64 @@ test.describe('Poke-a-Point Planning Poker E2E Suite', () => {
 
     sockA.disconnect();
     sockB.disconnect();
+  });
+
+  test('Host leaving room transfers host privileges to next participant', async ({ browser }) => {
+    const aliceContext = await browser.newContext();
+    const bobContext = await browser.newContext();
+    const alicePage = await aliceContext.newPage();
+    const bobPage = await bobContext.newPage();
+
+    await createRoomHelper(alicePage, 'Host Transfer Room', 'Alice');
+    const roomUrl = alicePage.url();
+
+    await joinRoomHelper(bobPage, roomUrl, 'Bob');
+    await expect(bobPage.getByText('2 Online')).toBeVisible({ timeout: 5000 });
+
+    // Verify Bob is not host initially
+    await expect(bobPage.getByText('Show Points')).not.toBeVisible();
+
+    // Alice leaves room via user profile menu
+    await alicePage.getByTestId('user-profile-chip').click();
+    await alicePage.getByText('Leave Room').click();
+
+    // Alice is redirected to Home
+    await expect(alicePage).toHaveURL('/');
+
+    // Bob receives room update and becomes Host (Host badge & Show Points button become visible)
+    await expect(bobPage.getByTestId('host-badge')).toBeVisible({ timeout: 5000 });
+    await expect(bobPage.getByText('Show Points')).toBeVisible();
+
+    await aliceContext.close();
+    await bobContext.close();
+  });
+
+  test('Host ending session broadcasts sessionEnded and redirects participants home', async ({ browser }) => {
+    const aliceContext = await browser.newContext();
+    const bobContext = await browser.newContext();
+    const alicePage = await aliceContext.newPage();
+    const bobPage = await bobContext.newPage();
+
+    // Handle dialog alert for Bob when session ends
+    bobPage.on('dialog', async (dialog) => {
+      await dialog.accept();
+    });
+
+    await createRoomHelper(alicePage, 'End Session Room', 'Alice');
+    const roomUrl = alicePage.url();
+
+    await joinRoomHelper(bobPage, roomUrl, 'Bob');
+    await expect(bobPage.getByText('2 Online')).toBeVisible({ timeout: 5000 });
+
+    // Alice ends session via user profile menu
+    await alicePage.getByTestId('user-profile-chip').click();
+    await alicePage.getByText('End Session', { exact: true }).click();
+
+    // Both pages navigate away from the room
+    await expect(alicePage).toHaveURL('/');
+    await expect(bobPage).toHaveURL('/', { timeout: 5000 });
+
+    await aliceContext.close();
+    await bobContext.close();
   });
 });

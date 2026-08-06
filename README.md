@@ -28,6 +28,8 @@ Poke-a-Point is an Agile estimation tool built with React, TypeScript, and Vite.
 - 👁️ **Observer / Voter Role Toggle:** Switch seamlessly between active voter and spectator/observer mode. Observers can follow along without affecting voting thresholds or blocking consensus.
 - ⚡ **Real-time WebSockets & Auto-Reveal:** Powered by Socket.IO for zero-latency updates. Optional auto-reveal feature automatically flips cards the moment all voters finish casting.
 - 📊 **Consensus & Statistical Breakdown:** Displays team average, consensus indicator badges, and a visual vote distribution chart once votes are revealed.
+- 🔄 **Dynamic Round Controls:** "Reset All Votes" button dynamically switches to "Next Round" when points are revealed for intuitive session flow.
+- 👑 **Session Management & Host Transfer:** User avatar menu provides clean "Leave Room" (which automatically transfers host status to the next participant) and "End Session" (host can close the room for everyone).
 - 📋 **One-Click Invite Links:** Compact header pill with copy button allows quick team sharing via direct URL.
 - 🔒 **Privacy First (In-Memory Only):** Zero data persistence. Room data and user votes exist strictly in memory for the duration of the session.
 - 🎨 **Modern Dark-Mode UI:** Clean, responsive interface built with Material UI.
@@ -122,6 +124,22 @@ npm install -g pnpm
   ```
 
   - Starts the backend server from the built files.
+
+- **Run Backend Socket Unit Tests:**
+
+  ```bash
+  pnpm --filter ./backend run test
+  ```
+
+  - Executes backend socket unit integration tests.
+
+- **Run Playwright E2E Tests:**
+
+  ```bash
+  pnpm run test:e2e
+  ```
+
+  - Executes end-to-end multi-browser test suite.
 
 ## Deployment
 
