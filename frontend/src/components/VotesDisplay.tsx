@@ -193,7 +193,7 @@ const VotesDisplay: React.FC<VotesDisplayProps> = ({
               onClick={handleResetVotes}
               sx={{ fontWeight: 'bold', borderRadius: 2 }}
             >
-              Reset All Votes
+              {showVotes ? 'Next Round' : 'Reset All Votes'}
             </Button>
           </Box>
         )}
