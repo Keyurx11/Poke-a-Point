@@ -39,7 +39,7 @@ test.describe('Poke-a-Point Planning Poker E2E Suite', () => {
 
     // 1. Alice Creates Room
     await createRoomHelper(alicePage, 'Sprint 100 Planning', 'Alice');
-    await expect(alicePage.getByText('Session Host')).toBeVisible();
+    await expect(alicePage.getByTestId('host-badge')).toBeVisible();
 
     // Get room URL for Bob
     const roomUrl = alicePage.url();
@@ -95,7 +95,7 @@ test.describe('Poke-a-Point Planning Poker E2E Suite', () => {
     // 7. Page Refresh & Host Retention
     await alicePage.reload();
     await expect(alicePage.getByText('Sprint 100 Planning')).toBeVisible();
-    await expect(alicePage.getByText('Session Host')).toBeVisible();
+    await expect(alicePage.getByTestId('host-badge')).toBeVisible();
     await expect(alicePage.getByText('Logged in as Alice')).toBeVisible();
 
     await aliceContext.close();
@@ -198,5 +198,98 @@ test.describe('Poke-a-Point Planning Poker E2E Suite', () => {
     await expect(page.getByText('Voting Results (Hidden)')).toBeVisible();
 
     stranger.disconnect();
+  });
+
+  test('Toggling to Observer hides voting controls and the server refuses observer votes', async ({ page, baseURL }) => {
+    await createRoomHelper(page, 'Observer UI Room', 'Ivy');
+    const roomId = page.url().split('/room/')[1];
+    const userId = await page.evaluate(() => localStorage.getItem('userId'));
+
+    await page.getByTestId('observer-toggle').click();
+    await expect(page.getByText('Observer Mode')).toBeVisible();
+    await expect(page.getByText("You’re spectating this round.")).toBeVisible();
+
+    // Defense in depth: even if a client bypassed the UI, the server itself must reject the vote.
+    const stranger = ioClient(baseURL!);
+    await new Promise<void>((resolve) => stranger.on('connect', () => resolve()));
+    const voteResponse = await new Promise<{ success: boolean; error?: string }>((resolve) => {
+      stranger.emit('joinRoom', { roomId, userName: 'Ivy', userId }, () => {
+        stranger.emit('vote', { roomId, userId, vote: 5 }, resolve);
+      });
+    });
+    expect(voteResponse.success).toBe(false);
+    expect(voteResponse.error).toMatch(/Observers cannot vote/);
+    stranger.disconnect();
+  });
+
+  test('Switching to Observer can complete an in-progress auto-reveal', async ({ browser }) => {
+    const aliceContext = await browser.newContext();
+    const alicePage = await aliceContext.newPage();
+    await createRoomHelper(alicePage, 'Observer Room', 'Ivy', { autoReveal: true });
+    const roomId = alicePage.url().split('/room/')[1];
+
+    const bobContext = await browser.newContext();
+    const bobPage = await bobContext.newPage();
+    await bobPage.goto(`/join?roomId=${roomId}`);
+    await bobPage.fill('label:has-text("Your Name") + div input, input[label="Your Name"]', 'Bob');
+    await bobPage.click('button[type="submit"], button:has-text("Join Room")');
+    await expect(bobPage).toHaveURL(/\/room\/.+/);
+
+    // Alice votes; Bob hasn't, so auto-reveal must not fire yet
+    await alicePage.click('button:has-text("5")');
+    await expect(bobPage.getByText('Vote Submitted').first()).toBeVisible({ timeout: 5000 });
+    await expect(alicePage.getByText('Voting Results (Hidden)')).toBeVisible();
+
+    // Bob switches to Observer instead of voting. He is now excluded from the voter pool,
+    // which leaves Alice as the only voter — and she has already voted. That should
+    // complete the "everyone voted" condition and trigger auto-reveal immediately,
+    // not only on the next vote event (regression coverage for that gap).
+    await bobPage.getByTestId('observer-toggle').click();
+    await expect(alicePage.getByText('Voting Results (Hidden)')).not.toBeVisible({ timeout: 5000 });
+    await expect(alicePage.getByTestId('vote-stats-value')).toHaveText('5');
+
+    // Observers are excluded from the voter/observer counts
+    await expect(alicePage.getByText('1 Voter · 1 Observer')).toBeVisible();
+
+    await aliceContext.close();
+    await bobContext.close();
+  });
+
+  test('Vote values are masked to other users before reveal but visible to the voter themselves', async ({ page, baseURL }) => {
+    await createRoomHelper(page, 'Masking Room', 'Ivy');
+    const roomId = page.url().split('/room/')[1];
+
+    const sockA = ioClient(baseURL!);
+    const sockB = ioClient(baseURL!);
+    await Promise.all([
+      new Promise<void>((resolve) => sockA.on('connect', () => resolve())),
+      new Promise<void>((resolve) => sockB.on('connect', () => resolve())),
+    ]);
+
+    const userA = 'mask-test-user-a';
+    const userB = 'mask-test-user-b';
+
+    // Track the latest personalized votesUpdate each socket has seen. Using persistent
+    // listeners + polling (rather than a one-shot .once() per vote) avoids a race where a
+    // still-in-flight event from an earlier broadcast is mistaken for the next one.
+    let latestForA: Record<string, unknown> = {};
+    let latestForB: Record<string, unknown> = {};
+    sockA.on('votesUpdate', (v: Record<string, unknown>) => { latestForA = v; });
+    sockB.on('votesUpdate', (v: Record<string, unknown>) => { latestForB = v; });
+
+    await new Promise<void>((resolve) => sockA.emit('joinRoom', { roomId, userName: 'UserA', userId: userA }, () => resolve()));
+    await new Promise<void>((resolve) => sockB.emit('joinRoom', { roomId, userName: 'UserB', userId: userB }, () => resolve()));
+
+    // UserA votes; UserB should only see that a vote was cast, not its value
+    await new Promise<void>((resolve) => sockA.emit('vote', { roomId, userId: userA, vote: 5 }, () => resolve()));
+    await expect.poll(() => latestForB[userA]).toBe(true);
+
+    // UserA should see their own real vote value in the very same (still-hidden) round
+    await new Promise<void>((resolve) => sockB.emit('vote', { roomId, userId: userB, vote: 3 }, () => resolve()));
+    await expect.poll(() => latestForA[userB]).toBe(true);
+    expect(latestForA[userA]).toBe(5);
+
+    sockA.disconnect();
+    sockB.disconnect();
   });
 });
